@@ -204,6 +204,12 @@ class _RestaurantPageState extends State<RestaurantPage> {
 
   void _redeemDiscount() {
     if (_data == null) return;
+    if (widget.restaurantId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error: Missing restaurant ID')),
+      );
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(
