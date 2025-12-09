@@ -1,0 +1,466 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../data/repositories/auth_repository.dart';
+import '../../theme/app_theme.dart';
+import '../common/primary_button.dart';
+import '../main_shell.dart';
+
+/// OTP Entry page with 6-digit input and resend cooldown.
+class OtpPage extends StatefulWidget {
+  /// Phone number that the code was sent to.
+  final String phoneNumber;
+
+  const OtpPage({
+    super.key,
+    required this.phoneNumber,
+    required String fullName,
+  });
+
+  @override
+  State<OtpPage> createState() => _OtpPageState();
+}
+
+class _OtpPageState extends State<OtpPage> {
+  static const int _otpLength = 6;
+  static const int _cooldownSeconds = 60;
+
+  final List<TextEditingController> _controllers = [];
+  final List<FocusNode> _focusNodes = [];
+  final _authRepository = AuthRepository();
+
+  Timer? _cooldownTimer;
+  int _remainingCooldown = _cooldownSeconds;
+  bool _canResend = false;
+  bool _isVerifying = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize controllers and focus nodes
+    for (int i = 0; i < _otpLength; i++) {
+      _controllers.add(TextEditingController());
+      _focusNodes.add(FocusNode());
+    }
+    // Start cooldown timer
+    _startCooldown();
+    // Focus first box
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNodes[0].requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _cooldownTimer?.cancel();
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    for (final focusNode in _focusNodes) {
+      focusNode.dispose();
+    }
+    super.dispose();
+  }
+
+  void _startCooldown() {
+    setState(() {
+      _remainingCooldown = _cooldownSeconds;
+      _canResend = false;
+    });
+
+    _cooldownTimer?.cancel();
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_remainingCooldown > 0) {
+        setState(() {
+          _remainingCooldown--;
+        });
+      } else {
+        timer.cancel();
+        setState(() {
+          _canResend = true;
+        });
+      }
+    });
+  }
+
+  String get _formattedCooldown {
+    final minutes = _remainingCooldown ~/ 60;
+    final seconds = _remainingCooldown % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  void _onKeyPress(int index, KeyEvent event) {
+    if (event is KeyDownEvent) {
+      if (event.logicalKey == LogicalKeyboardKey.backspace) {
+        if (_controllers[index].text.isEmpty && index > 0) {
+          // Move to previous field on backspace if current is empty
+          _controllers[index - 1].clear();
+          _focusNodes[index - 1].requestFocus();
+        }
+      }
+    }
+  }
+
+  String get _fullOtp {
+    return _controllers.map((c) => c.text).join();
+  }
+
+  Future<void> _verifyOtp() async {
+    final otp = _fullOtp;
+
+    if (otp.length != _otpLength) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter all 6 digits')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isVerifying = true;
+      _errorMessage = null;
+    });
+
+    final result = await _authRepository.verifyOtp(widget.phoneNumber, otp);
+
+    if (!mounted) return;
+
+    setState(() {
+      _isVerifying = false;
+    });
+
+    if (result.success) {
+      if (result.isNewUser) {
+        _showNameEntryDialog();
+      } else {
+        _navigateToHome();
+      }
+    } else {
+      setState(() {
+        _errorMessage = result.error ?? 'Verification failed';
+      });
+    }
+  }
+
+  Future<void> _showNameEntryDialog() async {
+    final nameController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: kCardBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kCardRadius),
+        ),
+        title: Text('Welcome!', style: kTitleStyle),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Please enter your full name to complete registration.',
+                style: kBodyStyle.copyWith(color: kTextSecondary),
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: nameController,
+                textCapitalization: TextCapitalization.words,
+                style: kBodyStyle,
+                decoration: InputDecoration(
+                  labelText: 'Full Name',
+                  labelStyle: kBodyStyle.copyWith(color: kTextSecondary),
+                  hintText: 'e.g., John Doe',
+                  hintStyle: kBodyStyle.copyWith(
+                    color: kTextSecondary.withValues(alpha: 0.5),
+                  ),
+                  prefixIcon: const Icon(Icons.person_outline, color: kPrimary),
+                  filled: true,
+                  fillColor: kBackground,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter your name';
+                  }
+                  if (value.trim().length < 2) {
+                    return 'Name must be at least 2 characters';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.pop(context, nameController.text.trim());
+              }
+            },
+            child: Text(
+              'Continue',
+              style: kBodyStyle.copyWith(
+                color: kPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      await _updateProfile(result);
+      if (mounted) _navigateToHome();
+    } else {
+      // User dismissed - still navigate but without name
+      if (mounted) _navigateToHome();
+    }
+  }
+
+  Future<void> _updateProfile(String fullName) async {
+    await _authRepository.updateProfile(fullName: fullName);
+  }
+
+  void _navigateToHome() {
+    // Navigate to MainShell and clear the navigation stack
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const MainShell()),
+      (route) => false,
+    );
+  }
+
+  void _clearOtp() {
+    for (final controller in _controllers) {
+      controller.clear();
+    }
+    _focusNodes[0].requestFocus();
+  }
+
+  Future<void> _handleResend() async {
+    if (!_canResend) return;
+
+    setState(() => _canResend = false);
+
+    final result = await _authRepository.requestOtp(widget.phoneNumber);
+
+    if (!mounted) return;
+
+    if (result.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.message ?? 'Code resent'),
+          backgroundColor: kPrimary,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+      // Restart cooldown
+      _startCooldown();
+      _clearOtp();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.error ?? 'Failed to resend code'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+      // Let user try again sooner if failed? Or keep cooldown?
+      // Keeping cooldown to prevent spam even on errors
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: kBackground,
+      appBar: AppBar(
+        title: Text('Verification', style: kTitleStyle),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: kTextPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 16),
+              // Header
+              Text('Enter Code', style: kTitleStyle.copyWith(fontSize: 28)),
+              const SizedBox(height: 8),
+              Text(
+                'We sent a 6-digit code to',
+                style: kBodyStyle.copyWith(color: kTextSecondary),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                widget.phoneNumber,
+                style: kSubtitleStyle.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 40),
+              // OTP Boxes
+              _buildOtpBoxes(),
+              const SizedBox(height: 16),
+              // Error message
+              if (_errorMessage != null)
+                Text(
+                  _errorMessage!,
+                  style: kBodyStyle.copyWith(color: Colors.red),
+                  textAlign: TextAlign.center,
+                ),
+              const SizedBox(height: 24),
+              // Waiting indicator
+              if (_isVerifying)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(kPrimary),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Verifying...',
+                      style: kBodyStyle.copyWith(color: kTextSecondary),
+                    ),
+                  ],
+                )
+              else
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(kPrimary),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Waiting for Telegram message...',
+                      style: kBodyStyle.copyWith(color: kTextSecondary),
+                    ),
+                  ],
+                ),
+              const SizedBox(height: 40),
+              // Resend / Cooldown
+              _buildResendSection(),
+              const SizedBox(height: 32),
+              // Verify Button
+              PrimaryButton(
+                label: 'Verify',
+                onPressed: _isVerifying ? null : _verifyOtp,
+                isLoading: _isVerifying,
+                enabled: _fullOtp.length == _otpLength && !_isVerifying,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOtpBoxes() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: List.generate(_otpLength, (index) {
+        return SizedBox(
+          width: 48,
+          height: 56,
+          child: KeyboardListener(
+            focusNode: _focusNodes[index],
+            onKeyEvent: (event) => _onKeyPress(index, event),
+            child: TextField(
+              controller: _controllers[index],
+              focusNode: _focusNodes[index],
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              maxLength: 1,
+              style: kTitleStyle.copyWith(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+              decoration: InputDecoration(
+                counterText: '',
+                filled: true,
+                fillColor: kCardBg,
+                contentPadding: EdgeInsets.zero,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                    color: _errorMessage != null
+                        ? Colors.red
+                        : kTextSecondary.withValues(alpha: 0.3),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: kPrimary, width: 2),
+                ),
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(1),
+              ],
+              onChanged: (value) => _onOtpChanged(index, value),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  void _onOtpChanged(int index, String value) {
+    if (value.isNotEmpty) {
+      if (index < _otpLength - 1) {
+        _focusNodes[index + 1].requestFocus();
+      } else {
+        _focusNodes[index].unfocus();
+        _verifyOtp();
+      }
+    }
+  }
+
+  Widget _buildResendSection() {
+    if (_canResend) {
+      return GestureDetector(
+        onTap: _handleResend,
+        child: Text(
+          'Resend code',
+          style: kSubtitleStyle.copyWith(
+            color: kPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    return Text(
+      'Resend code in $_formattedCooldown',
+      style: kBodyStyle.copyWith(color: kTextSecondary),
+      textAlign: TextAlign.center,
+    );
+  }
+}
