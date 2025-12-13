@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../common/primary_button.dart';
@@ -154,13 +153,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
                           label: 'Sign Up',
                           onPressed: _navigateToSignUp,
                         ),
-                        if (kDebugMode) ...[
-                          const SizedBox(height: 16),
-                          SecondaryButton(
-                            label: 'Continue to Home (Dev)',
-                            onPressed: _navigateToHome,
-                          ),
-                        ],
+                        const SizedBox(height: 16),
+                        SecondaryButton(
+                          label: 'Continue to Home (Dev)',
+                          onPressed: _navigateToHome,
+                        ),
                       ] else ...[
                         PrimaryButton(
                           label: 'Next',

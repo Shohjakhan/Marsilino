@@ -35,7 +35,7 @@ class _HomePageState extends State<HomePage> {
     'Coffee',
   ];
 
-  Set<String> _selectedFilters = {};
+  final Set<String> _selectedFilters = {};
 
   @override
   void initState() {

@@ -5,6 +5,7 @@ import '../../data/repositories/auth_repository.dart';
 import '../../theme/app_theme.dart';
 import '../common/primary_button.dart';
 import '../main_shell.dart';
+import '../onboarding/complete_profile_page.dart';
 
 /// OTP Entry page with 6-digit input and resend cooldown.
 class OtpPage extends StatefulWidget {
@@ -121,113 +122,41 @@ class _OtpPageState extends State<OtpPage> {
       _errorMessage = null;
     });
 
-    final result = await _authRepository.verifyOtp(widget.phoneNumber, otp);
+    try {
+      final result = await _authRepository.verifyOtp(widget.phoneNumber, otp);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _isVerifying = false;
-    });
-
-    if (result.success) {
-      if (result.isNewUser) {
-        _showNameEntryDialog();
-      } else {
-        _navigateToHome();
-      }
-    } else {
       setState(() {
-        _errorMessage = result.error ?? 'Verification failed';
+        _isVerifying = false;
+      });
+
+      if (result.success) {
+        if (result.isNewUser) {
+          _showNameEntryDialog();
+        } else {
+          _navigateToHome();
+        }
+      } else {
+        setState(() {
+          _errorMessage = result.error ?? 'Verification failed';
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isVerifying = false;
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
       });
     }
   }
 
-  Future<void> _showNameEntryDialog() async {
-    final nameController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    final result = await showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: kCardBg,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(kCardRadius),
-        ),
-        title: Text('Welcome!', style: kTitleStyle),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Please enter your full name to complete registration.',
-                style: kBodyStyle.copyWith(color: kTextSecondary),
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: nameController,
-                textCapitalization: TextCapitalization.words,
-                style: kBodyStyle,
-                decoration: InputDecoration(
-                  labelText: 'Full Name',
-                  labelStyle: kBodyStyle.copyWith(color: kTextSecondary),
-                  hintText: 'e.g., John Doe',
-                  hintStyle: kBodyStyle.copyWith(
-                    color: kTextSecondary.withValues(alpha: 0.5),
-                  ),
-                  prefixIcon: const Icon(Icons.person_outline, color: kPrimary),
-                  filled: true,
-                  fillColor: kBackground,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter your name';
-                  }
-                  if (value.trim().length < 2) {
-                    return 'Name must be at least 2 characters';
-                  }
-                  return null;
-                },
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              if (formKey.currentState?.validate() ?? false) {
-                Navigator.pop(context, nameController.text.trim());
-              }
-            },
-            child: Text(
-              'Continue',
-              style: kBodyStyle.copyWith(
-                color: kPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
+  void _showNameEntryDialog() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const CompleteProfilePage()),
     );
-
-    if (result != null && result.isNotEmpty) {
-      await _updateProfile(result);
-      if (mounted) _navigateToHome();
-    } else {
-      // User dismissed - still navigate but without name
-      if (mounted) _navigateToHome();
-    }
-  }
-
-  Future<void> _updateProfile(String fullName) async {
-    await _authRepository.updateProfile(fullName: fullName);
   }
 
   void _navigateToHome() {
@@ -250,14 +179,14 @@ class _OtpPageState extends State<OtpPage> {
 
     setState(() => _canResend = false);
 
-    final result = await _authRepository.requestOtp(widget.phoneNumber);
+    try {
+      await _authRepository.requestOtp(widget.phoneNumber);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    if (result.success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.message ?? 'Code resent'),
+          content: const Text('Code resent'),
           backgroundColor: kPrimary,
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),
@@ -266,10 +195,14 @@ class _OtpPageState extends State<OtpPage> {
       // Restart cooldown
       _startCooldown();
       _clearOtp();
-    } else {
+    } catch (e) {
+      if (!mounted) return;
+
+      final message = e.toString().replaceAll('Exception: ', '');
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.error ?? 'Failed to resend code'),
+          content: Text(message),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),

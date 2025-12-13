@@ -56,16 +56,16 @@ class _SignUpPageState extends State<SignUpPage> {
 
     setState(() => _isLoading = true);
 
-    final result = await _authRepository.requestOtp(_phoneController.text);
+    try {
+      await _authRepository.requestOtp(_phoneController.text);
 
-    if (!mounted) return;
-    setState(() => _isLoading = false);
+      if (!mounted) return;
+      setState(() => _isLoading = false);
 
-    if (result.success) {
       // Show success snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.message ?? 'Code sent successfully'),
+          content: const Text('Code sent successfully'),
           backgroundColor: kPrimary,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -86,11 +86,16 @@ class _SignUpPageState extends State<SignUpPage> {
           ),
         ),
       );
-    } else {
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
       // Show error snackbar
+      final message = e.toString().replaceAll('Exception: ', '');
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.error ?? 'Failed to send code'),
+          content: Text(message),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(

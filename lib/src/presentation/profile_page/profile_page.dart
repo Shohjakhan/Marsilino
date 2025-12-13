@@ -6,6 +6,10 @@ import '../../theme/app_theme.dart';
 import '../../providers/locale_provider.dart';
 import '../common/rounded_card.dart';
 
+import '../../data/repositories/user_repository.dart';
+import '../../data/models/user_model.dart';
+import 'profile_edit_dialog.dart';
+
 /// Available languages for the app.
 enum AppLanguage { english, russian, uzbek }
 
@@ -19,12 +23,8 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final _transactionsRepository = TransactionsRepository();
-  // AppLanguage _selectedLanguage = AppLanguage.english; // Managed by Provider now
-
-  /// Sample user data for demo.
-  static const _userName = 'John Doe';
-  static const _userPhone = '+998 90 123 45 67';
-  static const _userAvatar = 'https://picsum.photos/seed/avatar1/200';
+  final _userRepository = UserRepository();
+  late Future<UserModel> _userFuture;
 
   List<Transaction> _transactions = [];
   bool _isLoadingTransactions = true;
@@ -32,6 +32,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
+    _userFuture = _userRepository.getMe();
     _loadTransactions();
   }
 
@@ -150,74 +151,113 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildProfileHeader() {
     final l10n = AppLocalizations.of(context)!;
-    return Column(
-      children: [
-        // Avatar
-        Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: kCardBg,
-            border: Border.all(color: kPrimary, width: 3),
-            boxShadow: [
-              BoxShadow(
-                color: kPrimary.withValues(alpha: 0.2),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+
+    return FutureBuilder<UserModel>(
+      future: _userFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Column(
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 8),
+              Text(
+                'Failed to load profile',
+                style: kBodyStyle.copyWith(color: Colors.red),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _userFuture = _userRepository.getMe();
+                  });
+                },
+                child: const Text('Retry'),
               ),
             ],
-          ),
-          child: ClipOval(
-            child: Image.network(
-              _userAvatar,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
-                  Icon(Icons.person, size: 48, color: kTextSecondary),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        // Name
-        Text(_userName, style: kTitleStyle.copyWith(fontSize: 24)),
-        const SizedBox(height: 4),
-        // Phone
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          );
+        }
+
+        final user = snapshot.data!;
+        final displayPhone = user.phoneNumber;
+        final displayName = user.fullName ?? 'User';
+        final initial = displayName.isNotEmpty
+            ? displayName[0].toUpperCase()
+            : '?';
+
+        return Column(
           children: [
-            Icon(Icons.phone_outlined, size: 16, color: kTextSecondary),
-            const SizedBox(width: 6),
-            Text(_userPhone, style: kBodyStyle.copyWith(color: kTextSecondary)),
-          ],
-        ),
-        const SizedBox(height: 16),
-        // Edit profile button
-        OutlinedButton.icon(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.editProfileSim),
-                backgroundColor: kPrimary,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                margin: const EdgeInsets.all(16),
+            // Avatar (Placeholder with initial)
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: kCardBg,
+                border: Border.all(color: kPrimary, width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: kPrimary.withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
-            );
-          },
-          icon: const Icon(Icons.edit_outlined, size: 16),
-          label: Text(l10n.editProfile),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: kPrimary,
-            side: BorderSide(color: kPrimary.withValues(alpha: 0.5)),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+              alignment: Alignment.center,
+              child: Text(
+                initial,
+                style: kTitleStyle.copyWith(fontSize: 40, color: kPrimary),
+              ),
             ),
-          ),
-        ),
-      ],
+            const SizedBox(height: 16),
+            // Name
+            Text(displayName, style: kTitleStyle.copyWith(fontSize: 24)),
+            const SizedBox(height: 4),
+            // Phone
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.phone_outlined, size: 16, color: kTextSecondary),
+                const SizedBox(width: 6),
+                Text(
+                  displayPhone,
+                  style: kBodyStyle.copyWith(color: kTextSecondary),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Edit profile button
+            OutlinedButton.icon(
+              onPressed: () async {
+                final updated = await showProfileEditDialog(
+                  context,
+                  currentName: displayName,
+                );
+                if (updated && mounted) {
+                  setState(() {
+                    _userFuture = _userRepository.getMe();
+                  });
+                }
+              },
+              icon: const Icon(Icons.edit_outlined, size: 16),
+              label: Text(l10n.editProfile),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: kPrimary,
+                side: BorderSide(color: kPrimary.withValues(alpha: 0.5)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -403,62 +443,113 @@ class _ProfilePageState extends State<ProfilePage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [kCardShadow],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Icon
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.green.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.check_circle_outline,
-              color: Colors.green,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 14),
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  transaction.restaurantName,
-                  style: kBodyStyle.copyWith(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _formatDate(transaction.date),
-                  style: kBodyStyle.copyWith(
-                    fontSize: 12,
-                    color: kTextSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Saved amount
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          // Header row
+          Row(
             children: [
-              Text(
-                '-${transaction.discountPercent.round()}%',
-                style: kBodyStyle.copyWith(
+              // Icon
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.check_circle_outline,
                   color: Colors.green,
-                  fontWeight: FontWeight.bold,
+                  size: 22,
                 ),
               ),
-              Text(
-                '${_formatNumber(transaction.discountAmount.round())} UZS',
-                style: kBodyStyle.copyWith(fontSize: 12, color: kTextSecondary),
+              const SizedBox(width: 14),
+              // Restaurant name and date
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      transaction.restaurantName,
+                      style: kBodyStyle.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatDate(transaction.date),
+                      style: kBodyStyle.copyWith(
+                        fontSize: 12,
+                        color: kTextSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Discount badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '-${transaction.discountPercent.round()}%',
+                  style: kBodyStyle.copyWith(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Amount details row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Original
+              _buildAmountColumn(
+                'Original',
+                '${_formatNumber(transaction.amount.round())} UZS',
+                kTextSecondary,
+              ),
+              // Saved
+              _buildAmountColumn(
+                'Saved',
+                '-${_formatNumber(transaction.discountAmount.round())} UZS',
+                Colors.green,
+              ),
+              // Final
+              _buildAmountColumn(
+                'Final',
+                '${_formatNumber(transaction.finalAmount.round())} UZS',
+                kTextPrimary,
               ),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAmountColumn(String label, String value, Color valueColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          label,
+          style: kBodyStyle.copyWith(fontSize: 11, color: kTextSecondary),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: kBodyStyle.copyWith(
+            fontSize: 12,
+            color: valueColor,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 

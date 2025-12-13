@@ -262,6 +262,34 @@ class RestaurantsRepository {
     }
   }
 
+  /// Get list of liked restaurants with full details.
+  Future<RestaurantsListResult> getLikedRestaurants() async {
+    try {
+      final response = await _client.get('/me/liked-restaurants/');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data ?? [];
+        final restaurants = data
+            .map((json) => Restaurant.fromJson(json as Map<String, dynamic>))
+            .toList();
+
+        return RestaurantsListResult(success: true, restaurants: restaurants);
+      }
+
+      return const RestaurantsListResult(
+        success: false,
+        error: 'Failed to load liked restaurants',
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return RestaurantsListResult(
+        success: false,
+        error: 'An unexpected error occurred: $e',
+      );
+    }
+  }
+
   LikeResult _handleLikeDioError(DioException e) {
     return LikeResult(success: false, error: _getLikeErrorMessage(e));
   }

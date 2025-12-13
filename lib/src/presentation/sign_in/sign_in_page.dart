@@ -45,18 +45,18 @@ class _SignInPageState extends State<SignInPage> {
       _isLoading = true;
     });
 
-    final result = await _authRepository.requestOtp(_phoneController.text);
+    try {
+      await _authRepository.requestOtp(_phoneController.text);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _isLoading = false;
-    });
+      setState(() {
+        _isLoading = false;
+      });
 
-    if (result.success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.message ?? 'Code sent successfully'),
+          content: const Text('Code sent successfully'),
           backgroundColor: kPrimary,
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),
@@ -70,10 +70,19 @@ class _SignInPageState extends State<SignInPage> {
               OtpPage(phoneNumber: _phoneController.text, fullName: ''),
         ),
       );
-    } else {
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      // Show error message (strip "Exception: " prefix if present)
+      final message = e.toString().replaceAll('Exception: ', '');
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.error ?? 'Failed to send code'),
+          content: Text(message),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),

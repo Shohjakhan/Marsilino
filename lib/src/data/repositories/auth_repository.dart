@@ -2,15 +2,6 @@ import 'package:dio/dio.dart';
 import '../api_client.dart';
 import 'token_storage.dart';
 
-/// Result of OTP request.
-class OtpRequestResult {
-  final bool success;
-  final String? message;
-  final String? error;
-
-  const OtpRequestResult({required this.success, this.message, this.error});
-}
-
 /// Result of OTP verification.
 class OtpVerifyResult {
   final bool success;
@@ -47,7 +38,9 @@ class AuthRepository {
 
   /// Request OTP for phone number.
   /// Returns success/error result.
-  Future<OtpRequestResult> requestOtp(String phoneNumber) async {
+  /// Request OTP for phone number.
+  /// Throws exception on failure.
+  Future<void> requestOtp(String phoneNumber) async {
     try {
       // Clean phone number - remove spaces and ensure format
       final cleanPhone = phoneNumber.replaceAll(' ', '');
@@ -58,28 +51,20 @@ class AuthRepository {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return OtpRequestResult(
-          success: true,
-          message: response.data?['message'] ?? 'OTP sent successfully',
-        );
+        return;
       }
 
-      return OtpRequestResult(
-        success: false,
-        error: response.data?['error'] ?? 'Failed to send OTP',
-      );
+      throw Exception(response.data?['error'] ?? 'Failed to send OTP');
     } on DioException catch (e) {
-      return _handleDioError(e);
+      throw Exception(_getDioErrorMessage(e));
     } catch (e) {
-      return OtpRequestResult(
-        success: false,
-        error: 'An unexpected error occurred: $e',
-      );
+      throw Exception('An unexpected error occurred: $e');
     }
   }
 
   /// Verify OTP code.
   /// Returns tokens and user info on success.
+  /// Throws exception on failure.
   Future<OtpVerifyResult> verifyOtp(String phoneNumber, String code) async {
     try {
       final cleanPhone = phoneNumber.replaceAll(' ', '');
@@ -115,17 +100,11 @@ class AuthRepository {
         );
       }
 
-      return OtpVerifyResult(
-        success: false,
-        error: response.data?['error'] ?? 'Failed to verify OTP',
-      );
+      throw Exception(response.data?['error'] ?? 'Failed to verify OTP');
     } on DioException catch (e) {
-      return _handleVerifyDioError(e);
+      throw Exception(_getDioErrorMessage(e));
     } catch (e) {
-      return OtpVerifyResult(
-        success: false,
-        error: 'An unexpected error occurred: $e',
-      );
+      throw Exception('An unexpected error occurred: $e');
     }
   }
 
@@ -143,17 +122,11 @@ class AuthRepository {
         return const UpdateProfileResult(success: true);
       }
 
-      return UpdateProfileResult(
-        success: false,
-        error: response.data?['error'] ?? 'Failed to update profile',
-      );
+      throw Exception(response.data?['error'] ?? 'Failed to update profile');
     } on DioException catch (e) {
-      return _handleProfileDioError(e);
+      throw Exception(_getDioErrorMessage(e));
     } catch (e) {
-      return UpdateProfileResult(
-        success: false,
-        error: 'An unexpected error occurred: $e',
-      );
+      throw Exception('An unexpected error occurred: $e');
     }
   }
 
@@ -176,7 +149,7 @@ class AuthRepository {
     return isLogged;
   }
 
-  OtpRequestResult _handleDioError(DioException e) {
+  String _getDioErrorMessage(DioException e) {
     String errorMessage;
 
     switch (e.type) {
@@ -206,66 +179,6 @@ class AuthRepository {
         errorMessage = 'Network error. Please try again.';
     }
 
-    return OtpRequestResult(success: false, error: errorMessage);
-  }
-
-  OtpVerifyResult _handleVerifyDioError(DioException e) {
-    String errorMessage;
-
-    switch (e.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-        errorMessage = 'Connection timeout. Please check your internet.';
-        break;
-      case DioExceptionType.connectionError:
-        errorMessage = 'Unable to connect to server. Please try again.';
-        break;
-      case DioExceptionType.badResponse:
-        final statusCode = e.response?.statusCode;
-        final data = e.response?.data;
-
-        if (statusCode == 400) {
-          errorMessage = data?['error'] ?? data?['code']?[0] ?? 'Invalid code';
-        } else if (statusCode == 404) {
-          errorMessage = 'OTP expired or not found. Please request a new one.';
-        } else {
-          errorMessage = data?['error'] ?? 'Verification failed ($statusCode)';
-        }
-        break;
-      default:
-        errorMessage = 'Network error. Please try again.';
-    }
-
-    return OtpVerifyResult(success: false, error: errorMessage);
-  }
-
-  UpdateProfileResult _handleProfileDioError(DioException e) {
-    String errorMessage;
-
-    switch (e.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-        errorMessage = 'Connection timeout. Please check your internet.';
-        break;
-      case DioExceptionType.connectionError:
-        errorMessage = 'Unable to connect to server. Please try again.';
-        break;
-      case DioExceptionType.badResponse:
-        final statusCode = e.response?.statusCode;
-        final data = e.response?.data;
-
-        if (statusCode == 401) {
-          errorMessage = 'Session expired. Please login again.';
-        } else {
-          errorMessage = data?['error'] ?? 'Update failed ($statusCode)';
-        }
-        break;
-      default:
-        errorMessage = 'Network error. Please try again.';
-    }
-
-    return UpdateProfileResult(success: false, error: errorMessage);
+    return errorMessage;
   }
 }

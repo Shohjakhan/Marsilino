@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:restaurant/l10n/gen/app_localizations.dart';
 import 'package:provider/provider.dart';
+import 'src/logic/auth_cubit.dart';
+import 'src/logic/bloc_observer.dart';
+import 'src/logic/like_cubit.dart';
+import 'src/logic/restaurants_cubit.dart';
 import 'src/presentation/onboarding/onboarding_page.dart';
 import 'src/theme/app_theme.dart';
 import 'src/providers/locale_provider.dart';
 
 void main() {
+  Bloc.observer = AppBlocObserver();
   runApp(const RestaurantApp());
 }
 
@@ -15,9 +21,16 @@ class RestaurantApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => LocaleProvider())],
-      child: const AppMaterialShell(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => AuthCubit()),
+        BlocProvider(create: (_) => RestaurantsCubit()),
+        BlocProvider(create: (_) => LikeCubit()),
+      ],
+      child: MultiProvider(
+        providers: [ChangeNotifierProvider(create: (_) => LocaleProvider())],
+        child: const AppMaterialShell(),
+      ),
     );
   }
 }
