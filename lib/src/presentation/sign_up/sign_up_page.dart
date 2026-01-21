@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../data/repositories/auth_repository.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../logic/auth_cubit.dart';
 import '../../theme/app_theme.dart';
 import '../common/primary_button.dart';
 import '../sign_in/otp_page.dart';
@@ -18,9 +19,6 @@ class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _authRepository = AuthRepository();
-
-  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -33,163 +31,148 @@ class _SignUpPageState extends State<SignUpPage> {
     if (value == null || value.trim().isEmpty) {
       return 'Please enter your full name';
     }
-    if (value.trim().length < 2) {
-      return 'Name must be at least 2 characters';
-    }
+    if (value.trim().length < 2) return 'Name must be at least 2 characters';
     return null;
   }
 
   String? _validatePhone(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter your phone number';
-    }
-    // Remove formatting characters
+    if (value == null || value.isEmpty) return 'Please enter your phone number';
     final digitsOnly = value.replaceAll(RegExp(r'[^\d]'), '');
-    if (digitsOnly.length < 12) {
-      return 'Please enter a valid phone number';
-    }
+    if (digitsOnly.length < 12) return 'Please enter a valid phone number';
     return null;
   }
 
-  Future<void> _handleSendCode() async {
+  void _handleSendCode() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    setState(() => _isLoading = true);
-
-    try {
-      await _authRepository.requestOtp(_phoneController.text);
-
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-
-      // Show success snackbar
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Code sent successfully'),
-          backgroundColor: kPrimary,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.all(16),
-          duration: const Duration(seconds: 1),
-        ),
-      );
-
-      // Navigate to OTP page with name for new user registration
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OtpPage(
-            phoneNumber: _phoneController.text,
-            fullName: _nameController.text.trim(),
-          ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-
-      // Show error snackbar
-      final message = e.toString().replaceAll('Exception: ', '');
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-    }
+    // Use Cubit to request OTP
+    context.read<AuthCubit>().requestOtp(_phoneController.text);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: kBackground,
-      appBar: AppBar(
-        title: Text('Sign Up', style: kTitleStyle),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: kTextPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 16),
-                // Header
-                Text(
-                  'Create Account',
-                  style: kTitleStyle.copyWith(fontSize: 28),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Enter your details to get started',
-                  style: kBodyStyle.copyWith(color: kTextSecondary),
-                ),
-                const SizedBox(height: 40),
-                // Full Name Field
-                _buildLabel('Full Name'),
-                const SizedBox(height: 8),
-                _buildNameField(),
-                const SizedBox(height: 24),
-                // Phone Number Field
-                _buildLabel('Phone Number'),
-                const SizedBox(height: 8),
-                _buildPhoneField(),
-                const SizedBox(height: 32),
-                // Info text
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: kPrimary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: kPrimary.withValues(alpha: 0.8),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          "We'll send a 6-digit code via Telegram to the phone linked with Telegram.",
-                          style: kBodyStyle.copyWith(
-                            color: kPrimary,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 40),
-                // Send Code Button
-                PrimaryButton(
-                  label: 'Send code via Telegram',
-                  onPressed: _handleSendCode,
-                  isLoading: _isLoading,
-                ),
-                const SizedBox(height: 24),
-              ],
+    return BlocConsumer<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is AuthOtpRequested) {
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Code sent successfully'),
+              backgroundColor: kPrimary,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              margin: const EdgeInsets.all(16),
+              duration: const Duration(seconds: 1),
+            ),
+          );
+
+          // Navigate to OTP page
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OtpPage(
+                phoneNumber: _phoneController.text,
+                fullName: _nameController.text.trim(),
+              ),
+            ),
+          );
+        } else if (state is AuthFailure) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+        }
+      },
+      builder: (context, state) {
+        final isLoading = state is AuthLoading;
+
+        return Scaffold(
+          backgroundColor: kBackground,
+          appBar: AppBar(
+            title: Text('Sign Up', style: kTitleStyle),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: kTextPrimary),
+              onPressed: () => Navigator.pop(context),
             ),
           ),
-        ),
-      ),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 16),
+                    Text(
+                      'Create Account',
+                      style: kTitleStyle.copyWith(fontSize: 28),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Enter your details to get started',
+                      style: kBodyStyle.copyWith(color: kTextSecondary),
+                    ),
+                    const SizedBox(height: 40),
+                    _buildLabel('Full Name'),
+                    const SizedBox(height: 8),
+                    _buildNameField(),
+                    const SizedBox(height: 24),
+                    _buildLabel('Phone Number'),
+                    const SizedBox(height: 8),
+                    _buildPhoneField(),
+                    const SizedBox(height: 32),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: kPrimary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: kPrimary.withValues(alpha: 0.8),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              "We'll send a 6-digit code via Telegram to the phone linked with Telegram.",
+                              style: kBodyStyle.copyWith(
+                                color: kPrimary,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    PrimaryButton(
+                      label: 'Send code via Telegram',
+                      onPressed: isLoading ? null : _handleSendCode,
+                      isLoading: isLoading,
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

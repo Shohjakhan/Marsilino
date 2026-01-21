@@ -1,6 +1,6 @@
 /// Restaurant model from API.
 class Restaurant {
-  final int id;
+  final String id;
   final String name;
   final String? logo;
   final String? description;
@@ -14,6 +14,9 @@ class Restaurant {
   final List<String> galleryImages;
   final double? latitude;
   final double? longitude;
+  final bool? bookingAvailable;
+  final int? maxPeople;
+  final List<String>? availableTimes;
 
   const Restaurant({
     required this.id,
@@ -30,6 +33,9 @@ class Restaurant {
     this.galleryImages = const [],
     this.latitude,
     this.longitude,
+    this.bookingAvailable,
+    this.maxPeople,
+    this.availableTimes,
   });
 
   /// Parse from JSON.
@@ -44,7 +50,7 @@ class Restaurant {
     }
 
     return Restaurant(
-      id: json['id'] as int,
+      id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
       logo: json['logo'] as String?,
       description: json['description'] as String?,
@@ -58,6 +64,11 @@ class Restaurant {
       galleryImages: gallery,
       latitude: _parseDouble(json['latitude']),
       longitude: _parseDouble(json['longitude']),
+      bookingAvailable: json['booking_available'] as bool?,
+      maxPeople: json['max_people'] as int?,
+      availableTimes: (json['available_times'] as List?)
+          ?.map((e) => e.toString())
+          .toList(),
     );
   }
 

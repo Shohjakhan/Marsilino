@@ -40,7 +40,7 @@ class DetailLoaded extends RestaurantDetailState {
 /// Error loading detail.
 class DetailError extends RestaurantDetailState {
   final String message;
-  final int? restaurantId;
+  final String? restaurantId;
 
   DetailError({required this.message, this.restaurantId});
 }
@@ -50,14 +50,14 @@ class RestaurantDetailCubit extends Cubit<RestaurantDetailState> {
   final RestaurantsRepository _repository;
   static const _networkTimeout = Duration(seconds: 8);
 
-  int? _currentRestaurantId;
+  String? _currentRestaurantId;
 
   RestaurantDetailCubit({RestaurantsRepository? repository})
     : _repository = repository ?? RestaurantsRepository(),
       super(DetailInitial());
 
   /// Load restaurant detail by ID.
-  Future<void> loadDetail(int restaurantId) async {
+  Future<void> loadDetail(String restaurantId) async {
     _currentRestaurantId = restaurantId;
     emit(DetailLoading());
 
@@ -121,7 +121,7 @@ class RestaurantDetailCubit extends Cubit<RestaurantDetailState> {
 
   /// Toggle like with optimistic update.
   /// Returns true if API call succeeded, false if reverted.
-  Future<bool> toggleLike(int restaurantId) async {
+  Future<bool> toggleLike(String restaurantId) async {
     final currentState = state;
     if (currentState is! DetailLoaded) return false;
 

@@ -3,7 +3,7 @@ import '../api_client.dart';
 
 class Transaction {
   final int id;
-  final int restaurantId;
+  final String restaurantId;
   final String restaurantName;
   final double amount;
   final double discountAmount;
@@ -27,7 +27,7 @@ class Transaction {
   factory Transaction.fromJson(Map<String, dynamic> json) {
     return Transaction(
       id: json['id'] as int,
-      restaurantId: json['restaurant'] as int? ?? 0,
+      restaurantId: json['restaurant']?.toString() ?? '',
       // The API might return nested restaurant object or just ID/Name
       // Assuming specific fields for list view based on typical response
       restaurantName:
@@ -92,7 +92,7 @@ class TransactionsRepository {
     : _client = client ?? ApiClient.instance;
 
   Future<TransactionResult> createTransaction({
-    required int restaurantId,
+    required String restaurantId,
     required double sumBeforeDiscount,
     required String cashierCode,
   }) async {

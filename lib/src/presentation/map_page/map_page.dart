@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:yandex_mapkit/yandex_mapkit.dart';
 import '../../data/models/restaurant.dart';
 import '../../data/repositories/restaurants_repository.dart';
 import '../../theme/app_theme.dart';
 import '../restaurant_page/restaurant_page.dart';
+import 'google_map_marker_helper.dart';
 
-/// Map page with Yandex Maps, user location, and restaurant markers.
+/// Map page with Google Maps, user location, and restaurant markers.
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
 
@@ -20,7 +21,7 @@ class _MapPageState extends State<MapPage> {
   final Set<String> _selectedFilters = {};
   final _restaurantsRepository = RestaurantsRepository();
 
-  YandexMapController? _mapController;
+  GoogleMapController? _mapController;
   Position? _userPosition;
   List<Restaurant> _restaurants = [];
   Restaurant? _selectedRestaurant;
@@ -28,8 +29,10 @@ class _MapPageState extends State<MapPage> {
   bool _locationPermissionDenied = false;
   String? _error;
 
+  Set<Marker> _markers = {};
+
   // Default center: Tashkent
-  static const _defaultCenter = Point(latitude: 41.2995, longitude: 69.2401);
+  static const _defaultCenter = LatLng(41.2995, 69.2401);
   static const _defaultZoom = 13.0;
 
   /// Available filter chips.
@@ -85,19 +88,10 @@ class _MapPageState extends State<MapPage> {
       });
 
       // Move camera to user location
-      _mapController?.moveCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: Point(
-              latitude: position.latitude,
-              longitude: position.longitude,
-            ),
-            zoom: _defaultZoom,
-          ),
-        ),
-        animation: const MapAnimation(
-          type: MapAnimationType.smooth,
-          duration: 1,
+      _mapController?.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(position.latitude, position.longitude),
+          _defaultZoom,
         ),
       );
 
@@ -127,10 +121,53 @@ class _MapPageState extends State<MapPage> {
       _isLoading = false;
       if (result.success) {
         _restaurants = result.restaurants;
+        _buildMarkers();
       } else {
         _error = result.error;
       }
     });
+  }
+
+  Future<void> _buildMarkers() async {
+    final newMarkers = <Marker>{};
+
+    // Add restaurant markers
+    for (final restaurant in _restaurants) {
+      if (restaurant.latitude == null || restaurant.longitude == null) continue;
+
+      final isSelected = _selectedRestaurant?.id == restaurant.id;
+      final icon = await GoogleMapMarkerHelper.createMarkerIcon(
+        logoUrl: restaurant.logo,
+        isSelected: isSelected,
+      );
+
+      newMarkers.add(
+        Marker(
+          markerId: MarkerId('restaurant_${restaurant.id}'),
+          position: LatLng(restaurant.latitude!, restaurant.longitude!),
+          icon: icon,
+          onTap: () => _onMarkerTap(restaurant),
+        ),
+      );
+    }
+
+    // Add user location marker
+    if (_userPosition != null) {
+      final userIcon = await GoogleMapMarkerHelper.createUserLocationMarker();
+      newMarkers.add(
+        Marker(
+          markerId: const MarkerId('user_location'),
+          position: LatLng(_userPosition!.latitude, _userPosition!.longitude),
+          icon: userIcon,
+        ),
+      );
+    }
+
+    if (mounted) {
+      setState(() {
+        _markers = newMarkers;
+      });
+    }
   }
 
   void _toggleFilter(String filter) {
@@ -149,6 +186,7 @@ class _MapPageState extends State<MapPage> {
           ? null
           : restaurant;
     });
+    _buildMarkers(); // Rebuild markers to update selected state
   }
 
   void _navigateToRestaurant(Restaurant restaurant) {
@@ -196,72 +234,12 @@ class _MapPageState extends State<MapPage> {
       return;
     }
 
-    _mapController?.moveCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: Point(
-            latitude: _userPosition!.latitude,
-            longitude: _userPosition!.longitude,
-          ),
-          zoom: _defaultZoom,
-        ),
-      ),
-      animation: const MapAnimation(
-        type: MapAnimationType.smooth,
-        duration: 0.5,
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLngZoom(
+        LatLng(_userPosition!.latitude, _userPosition!.longitude),
+        _defaultZoom,
       ),
     );
-  }
-
-  List<MapObject> _buildMarkers() {
-    final markers = <MapObject>[];
-
-    for (final restaurant in _restaurants) {
-      if (restaurant.latitude == null || restaurant.longitude == null) continue;
-
-      final isSelected = _selectedRestaurant?.id == restaurant.id;
-
-      // Use circle markers for now (can be replaced with custom PlacemarkIcon later)
-      markers.add(
-        CircleMapObject(
-          mapId: MapObjectId('restaurant_${restaurant.id}'),
-          circle: Circle(
-            center: Point(
-              latitude: restaurant.latitude!,
-              longitude: restaurant.longitude!,
-            ),
-            radius: isSelected ? 40 : 30,
-          ),
-          strokeColor: isSelected ? kPrimary : kTextSecondary,
-          strokeWidth: 2,
-          fillColor: isSelected
-              ? kPrimary.withValues(alpha: 0.3)
-              : kCardBg.withValues(alpha: 0.8),
-          onTap: (_, __) => _onMarkerTap(restaurant),
-        ),
-      );
-    }
-
-    // Add user location marker
-    if (_userPosition != null) {
-      markers.add(
-        CircleMapObject(
-          mapId: const MapObjectId('user_location'),
-          circle: Circle(
-            center: Point(
-              latitude: _userPosition!.latitude,
-              longitude: _userPosition!.longitude,
-            ),
-            radius: 20,
-          ),
-          strokeColor: Colors.blue,
-          strokeWidth: 3,
-          fillColor: Colors.blue.withValues(alpha: 0.3),
-        ),
-      );
-    }
-
-    return markers;
   }
 
   @override
@@ -344,26 +322,23 @@ class _MapPageState extends State<MapPage> {
   }
 
   Widget _buildMap() {
-    return YandexMap(
+    return GoogleMap(
       onMapCreated: (controller) {
         _mapController = controller;
-        // Move to default or user location
-        final target = _userPosition != null
-            ? Point(
-                latitude: _userPosition!.latitude,
-                longitude: _userPosition!.longitude,
-              )
-            : _defaultCenter;
-
-        _mapController?.moveCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(target: target, zoom: _defaultZoom),
-          ),
-        );
       },
-      mapObjects: _buildMarkers(),
-      onMapTap: (point) {
+      initialCameraPosition: CameraPosition(
+        target: _userPosition != null
+            ? LatLng(_userPosition!.latitude, _userPosition!.longitude)
+            : _defaultCenter,
+        zoom: _defaultZoom,
+      ),
+      markers: _markers,
+      myLocationEnabled: false, // We use custom user location marker
+      myLocationButtonEnabled: false,
+      zoomControlsEnabled: false,
+      onTap: (_) {
         setState(() => _selectedRestaurant = null);
+        _buildMarkers();
       },
     );
   }

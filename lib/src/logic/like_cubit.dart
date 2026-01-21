@@ -6,24 +6,24 @@ sealed class LikeState {}
 
 /// Initial state - all likes loaded.
 class LikeInitial extends LikeState {
-  final Set<int> likedRestaurantIds;
+  final Set<String> likedRestaurantIds;
 
   LikeInitial({this.likedRestaurantIds = const {}});
 }
 
 /// Currently toggling a like.
 class LikeToggling extends LikeState {
-  final int restaurantId;
-  final Set<int> likedRestaurantIds;
+  final String restaurantId;
+  final Set<String> likedRestaurantIds;
 
   LikeToggling({required this.restaurantId, required this.likedRestaurantIds});
 }
 
 /// Like toggle completed.
 class LikeToggled extends LikeState {
-  final int restaurantId;
+  final String restaurantId;
   final bool isLiked;
-  final Set<int> likedRestaurantIds;
+  final Set<String> likedRestaurantIds;
 
   LikeToggled({
     required this.restaurantId,
@@ -35,8 +35,8 @@ class LikeToggled extends LikeState {
 /// Like operation failed.
 class LikeError extends LikeState {
   final String message;
-  final int? restaurantId;
-  final Set<int> likedRestaurantIds;
+  final String? restaurantId;
+  final Set<String> likedRestaurantIds;
 
   LikeError({
     required this.message,
@@ -48,7 +48,7 @@ class LikeError extends LikeState {
 /// Centralized cubit for managing like state across pages.
 class LikeCubit extends Cubit<LikeState> {
   final RestaurantsRepository _repository;
-  Set<int> _likedIds = {};
+  Set<String> _likedIds = {};
 
   LikeCubit({RestaurantsRepository? repository})
     : _repository = repository ?? RestaurantsRepository(),
@@ -69,15 +69,15 @@ class LikeCubit extends Cubit<LikeState> {
   }
 
   /// Check if a restaurant is liked.
-  bool isLiked(int restaurantId) {
+  bool isLiked(String restaurantId) {
     return _likedIds.contains(restaurantId);
   }
 
   /// Get current set of liked IDs.
-  Set<int> get likedIds => Set.unmodifiable(_likedIds);
+  Set<String> get likedIds => Set.unmodifiable(_likedIds);
 
   /// Add a like (optimistic with revert on error).
-  Future<bool> addLike(int restaurantId) async {
+  Future<bool> addLike(String restaurantId) async {
     if (_likedIds.contains(restaurantId)) return true; // Already liked
 
     // Optimistic update
@@ -126,7 +126,7 @@ class LikeCubit extends Cubit<LikeState> {
   }
 
   /// Remove a like (optimistic with revert on error).
-  Future<bool> removeLike(int restaurantId) async {
+  Future<bool> removeLike(String restaurantId) async {
     if (!_likedIds.contains(restaurantId)) return true; // Already not liked
 
     // Optimistic update
@@ -175,7 +175,7 @@ class LikeCubit extends Cubit<LikeState> {
   }
 
   /// Toggle like state.
-  Future<bool> toggleLike(int restaurantId) {
+  Future<bool> toggleLike(String restaurantId) {
     return isLiked(restaurantId)
         ? removeLike(restaurantId)
         : addLike(restaurantId);

@@ -91,18 +91,6 @@ class _OtpPageState extends State<OtpPage> {
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
-  void _onKeyPress(int index, KeyEvent event) {
-    if (event is KeyDownEvent) {
-      if (event.logicalKey == LogicalKeyboardKey.backspace) {
-        if (_controllers[index].text.isEmpty && index > 0) {
-          // Move to previous field on backspace if current is empty
-          _controllers[index - 1].clear();
-          _focusNodes[index - 1].requestFocus();
-        }
-      }
-    }
-  }
-
   String get _fullOtp {
     return _controllers.map((c) => c.text).join();
   }
@@ -321,43 +309,41 @@ class _OtpPageState extends State<OtpPage> {
         return SizedBox(
           width: 48,
           height: 56,
-          child: KeyboardListener(
+          // Removed KeyboardListener to fix the exception.
+          // FocusNode now handles the key events directly.
+          child: TextField(
+            controller: _controllers[index],
             focusNode: _focusNodes[index],
-            onKeyEvent: (event) => _onKeyPress(index, event),
-            child: TextField(
-              controller: _controllers[index],
-              focusNode: _focusNodes[index],
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.center,
-              maxLength: 1,
-              style: kTitleStyle.copyWith(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-              decoration: InputDecoration(
-                counterText: '',
-                filled: true,
-                fillColor: kCardBg,
-                contentPadding: EdgeInsets.zero,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(
-                    color: _errorMessage != null
-                        ? Colors.red
-                        : kTextSecondary.withValues(alpha: 0.3),
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: kPrimary, width: 2),
-                ),
-              ),
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(1),
-              ],
-              onChanged: (value) => _onOtpChanged(index, value),
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.center,
+            maxLength: 1,
+            style: kTitleStyle.copyWith(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
             ),
+            decoration: InputDecoration(
+              counterText: '',
+              filled: true,
+              fillColor: kCardBg,
+              contentPadding: EdgeInsets.zero,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: _errorMessage != null
+                      ? Colors.red
+                      : kTextSecondary.withOpacity(0.3),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: kPrimary, width: 2),
+              ),
+            ),
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(1),
+            ],
+            onChanged: (value) => _onOtpChanged(index, value),
           ),
         );
       }),

@@ -65,6 +65,12 @@ class InputField extends StatelessWidget {
   /// Border radius override (default 14px).
   final double borderRadius;
 
+  /// Maximum lines for the input.
+  final int? maxLines;
+
+  /// Text input action.
+  final TextInputAction? textInputAction;
+
   const InputField({
     super.key,
     this.placeholder,
@@ -83,6 +89,8 @@ class InputField extends StatelessWidget {
     this.focusNode,
     this.textAlign = TextAlign.start,
     this.borderRadius = 14.0,
+    this.maxLines = 1,
+    this.textInputAction,
   });
 
   @override
@@ -114,6 +122,8 @@ class InputField extends StatelessWidget {
           enabled: enabled,
           obscureText: obscureText,
           textAlign: textAlign,
+          maxLines: maxLines,
+          textInputAction: textInputAction,
           keyboardType: _getKeyboardType(),
           inputFormatters: _getInputFormatters(),
           onChanged: onChanged,

@@ -24,6 +24,11 @@ class RestaurantData {
   final String? instagram;
   final String? telegram;
 
+  // Availability
+  final bool? bookingAvailable;
+  final int? maxPeople;
+  final List<String>? availableTimes;
+
   const RestaurantData({
     required this.name,
     required this.description,
@@ -38,6 +43,9 @@ class RestaurantData {
     this.discount,
     this.instagram,
     this.telegram,
+    this.bookingAvailable,
+    this.maxPeople,
+    this.availableTimes,
   });
 
   /// Extract discount percentage from discount string (e.g., "10% off" -> 10).
@@ -62,6 +70,9 @@ class RestaurantData {
       discount: r.discountText,
       instagram: r.instagram,
       telegram: r.telegram,
+      bookingAvailable: r.bookingAvailable,
+      maxPeople: r.maxPeople,
+      availableTimes: r.availableTimes,
     );
   }
 }
@@ -69,7 +80,7 @@ class RestaurantData {
 /// Restaurant landing page with full details.
 class RestaurantPage extends StatefulWidget {
   /// Restaurant ID for loading from API.
-  final int? restaurantId;
+  final String? restaurantId;
 
   /// Initial data to display while loading (optional).
   final RestaurantData? initialData;

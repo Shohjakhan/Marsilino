@@ -108,7 +108,7 @@ class RestaurantsRepository {
   }
 
   /// Get restaurant detail by ID.
-  Future<RestaurantDetailResult> getRestaurantDetail(int id) async {
+  Future<RestaurantDetailResult> getRestaurantDetail(String id) async {
     try {
       final response = await _client.get('/restaurants/$id/');
 
@@ -185,7 +185,7 @@ class RestaurantsRepository {
   }
 
   /// Like a restaurant.
-  Future<LikeResult> likeRestaurant(int restaurantId) async {
+  Future<LikeResult> likeRestaurant(String restaurantId) async {
     try {
       final response = await _client.post(
         '/me/liked-restaurants/$restaurantId/add/',
@@ -195,9 +195,13 @@ class RestaurantsRepository {
         return const LikeResult(success: true);
       }
 
+      String? errorMsg;
+      if (response.data is Map && response.data['error'] != null) {
+        errorMsg = response.data['error'].toString();
+      }
       return LikeResult(
         success: false,
-        error: response.data?['error'] ?? 'Failed to like restaurant',
+        error: errorMsg ?? 'Failed to like restaurant',
       );
     } on DioException catch (e) {
       return _handleLikeDioError(e);
@@ -210,7 +214,7 @@ class RestaurantsRepository {
   }
 
   /// Unlike a restaurant.
-  Future<LikeResult> unlikeRestaurant(int restaurantId) async {
+  Future<LikeResult> unlikeRestaurant(String restaurantId) async {
     try {
       final response = await _client.post(
         '/me/liked-restaurants/$restaurantId/remove/',
@@ -220,9 +224,13 @@ class RestaurantsRepository {
         return const LikeResult(success: true);
       }
 
+      String? errorMsg;
+      if (response.data is Map && response.data['error'] != null) {
+        errorMsg = response.data['error'].toString();
+      }
       return LikeResult(
         success: false,
-        error: response.data?['error'] ?? 'Failed to unlike restaurant',
+        error: errorMsg ?? 'Failed to unlike restaurant',
       );
     } on DioException catch (e) {
       return _handleLikeDioError(e);
@@ -237,13 +245,21 @@ class RestaurantsRepository {
   /// Get list of liked restaurant IDs.
   Future<LikedIdsResult> getLikedRestaurantIds() async {
     try {
-      final response = await _client.get('/me/liked-restaurants/');
+      final response = await _client.get('/likes/');
 
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data ?? [];
         final ids = data
-            .map((item) => item['id'] as int? ?? item['restaurant'] as int?)
-            .whereType<int>()
+            .map((item) {
+              if (item is String) return item;
+              if (item is Map) {
+                return (item['id']?.toString()) ??
+                    (item['restaurant']?.toString());
+              }
+              return item?.toString();
+            })
+            .whereType<String>()
+            .where((id) => id.isNotEmpty)
             .toList();
         return LikedIdsResult(success: true, ids: ids);
       }
@@ -265,7 +281,7 @@ class RestaurantsRepository {
   /// Get list of liked restaurants with full details.
   Future<RestaurantsListResult> getLikedRestaurants() async {
     try {
-      final response = await _client.get('/me/liked-restaurants/');
+      final response = await _client.get('/likes/');
 
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data ?? [];
@@ -307,7 +323,11 @@ class RestaurantsRepository {
         if (statusCode == 401) {
           return 'Please login to like restaurants.';
         }
-        return e.response?.data?['error'] ?? 'Failed ($statusCode)';
+        final data = e.response?.data;
+        if (data is Map && data['error'] != null) {
+          return data['error'].toString();
+        }
+        return 'Failed ($statusCode)';
       default:
         return 'Network error. Please try again.';
     }
@@ -325,7 +345,7 @@ class LikeResult {
 /// Result for getting liked restaurant IDs.
 class LikedIdsResult {
   final bool success;
-  final List<int> ids;
+  final List<String> ids;
   final String? error;
 
   const LikedIdsResult({

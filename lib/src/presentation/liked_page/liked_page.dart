@@ -114,6 +114,7 @@ class _LikedPageState extends State<LikedPage> {
     return Scaffold(
       backgroundColor: kBackground,
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             _buildHeader(),
@@ -121,9 +122,9 @@ class _LikedPageState extends State<LikedPage> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _error != null
-                  ? _buildErrorState()
+                  ? SingleChildScrollView(child: _buildErrorState())
                   : _likedRestaurants.isEmpty
-                  ? _buildEmptyState()
+                  ? SingleChildScrollView(child: _buildEmptyState())
                   : _buildList(),
             ),
           ],
@@ -175,88 +176,84 @@ class _LikedPageState extends State<LikedPage> {
   }
 
   Widget _buildErrorState() {
-    return Expanded(
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: kTextSecondary.withValues(alpha: 0.4),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _error ?? 'Something went wrong',
-              style: kSubtitleStyle.copyWith(color: kTextSecondary),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            PrimaryButton(
-              label: 'Retry',
-              onPressed: _loadLikedRestaurants,
-              fullWidth: false,
-            ),
-          ],
-        ),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: kTextSecondary.withValues(alpha: 0.4),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _error ?? 'Something went wrong',
+            style: kSubtitleStyle.copyWith(color: kTextSecondary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          PrimaryButton(
+            label: 'Retry',
+            onPressed: _loadLikedRestaurants,
+            fullWidth: false,
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildEmptyState() {
-    return Expanded(
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: kCardBg,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: kPrimary.withValues(alpha: 0.1),
-                    blurRadius: 30,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.favorite_border,
-                size: 48,
-                color: kTextSecondary.withValues(alpha: 0.4),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'No favorites yet',
-              style: kSubtitleStyle.copyWith(
-                color: kTextSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 48),
-              child: Text(
-                'Tap the heart icon on any restaurant to save it here',
-                style: kBodyStyle.copyWith(
-                  color: kTextSecondary.withValues(alpha: 0.7),
-                  fontSize: 14,
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: kCardBg,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: kPrimary.withValues(alpha: 0.1),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
                 ),
-                textAlign: TextAlign.center,
+              ],
+            ),
+            child: Icon(
+              Icons.favorite_border,
+              size: 48,
+              color: kTextSecondary.withValues(alpha: 0.4),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'No favorites yet',
+            style: kSubtitleStyle.copyWith(
+              color: kTextSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 48),
+            child: Text(
+              'Tap the heart icon on any restaurant to save it here',
+              style: kBodyStyle.copyWith(
+                color: kTextSecondary.withValues(alpha: 0.7),
+                fontSize: 14,
               ),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
-            PrimaryButton(
-              label: 'Explore Restaurants',
-              onPressed: _goToHome,
-              fullWidth: false,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 32),
+          PrimaryButton(
+            label: 'Explore Restaurants',
+            onPressed: _goToHome,
+            fullWidth: false,
+          ),
+        ],
       ),
     );
   }

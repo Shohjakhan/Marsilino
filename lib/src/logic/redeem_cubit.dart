@@ -48,7 +48,7 @@ class RedeemCubit extends Cubit<RedeemState> {
 
   /// Submit a redeem transaction.
   Future<void> submitRedeem({
-    required int restaurantId,
+    required String restaurantId,
     required double amount,
     required String cashierCode,
   }) async {

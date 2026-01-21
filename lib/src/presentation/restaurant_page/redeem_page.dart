@@ -11,7 +11,7 @@ enum RedeemResult { success, expired, invalid, cashierMismatch }
 /// Redeem Discount page for applying restaurant discounts.
 class RedeemPage extends StatefulWidget {
   /// Restaurant ID
-  final int restaurantId;
+  final String restaurantId;
 
   /// Restaurant name.
   final String restaurantName;

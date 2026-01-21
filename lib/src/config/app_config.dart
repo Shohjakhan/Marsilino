@@ -2,7 +2,7 @@
 class AppConfig {
   /// Base URL for the API.
   /// Change this for different environments (dev, staging, prod).
-  static const String apiBaseUrl = 'http://127.0.0.1:8000';
+  static const String apiBaseUrl = 'https://marsilino.onrender.com';
 
   /// API version prefix.
   static const String apiPrefix = '/api';
