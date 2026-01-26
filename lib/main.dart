@@ -11,7 +11,13 @@ import 'src/presentation/onboarding/onboarding_page.dart';
 import 'src/theme/app_theme.dart';
 import 'src/providers/locale_provider.dart';
 
-void main() {
+import 'package:firebase_core/firebase_core.dart';
+import 'src/services/push/firebase_push_service.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  await FirebasePushService().initialize();
   Bloc.observer = AppBlocObserver();
   runApp(const RestaurantApp());
 }

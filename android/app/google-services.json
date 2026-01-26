@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "215844579757",
+    "project_id": "marsilino-a7023",
+    "storage_bucket": "marsilino-a7023.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:215844579757:android:b2d8f7ff9d9d865e69d924",
+        "android_client_info": {
+          "package_name": "com.example.restaurant"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDP9v23GmhSiq4Ta604Og6Msc1IygXweFM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

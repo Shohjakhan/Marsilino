@@ -5,6 +5,8 @@ import '../../data/repositories/transactions_repository.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/locale_provider.dart';
 import '../common/rounded_card.dart';
+import '../../data/repositories/token_storage.dart';
+import 'package:flutter/services.dart';
 
 import '../../data/repositories/user_repository.dart';
 import '../../data/models/user_model.dart';
@@ -25,6 +27,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final _transactionsRepository = TransactionsRepository();
   final _userRepository = UserRepository();
   late Future<UserModel> _userFuture;
+  String? _fcmToken;
 
   List<Transaction> _transactions = [];
   bool _isLoadingTransactions = true;
@@ -34,6 +37,16 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     _userFuture = _userRepository.getMe();
     _loadTransactions();
+    _loadFcmToken();
+  }
+
+  Future<void> _loadFcmToken() async {
+    final token = await TokenStorage.instance.getFcmToken();
+    if (mounted) {
+      setState(() {
+        _fcmToken = token;
+      });
+    }
   }
 
   Future<void> _loadTransactions() async {
@@ -142,9 +155,53 @@ class _ProfilePageState extends State<ProfilePage> {
               // Logout button
               _buildLogoutButton(),
               const SizedBox(height: 24),
+              // Debug FCM Token
+              if (_fcmToken != null) _buildFcmTokenDebug(),
+              const SizedBox(height: 24),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFcmTokenDebug() {
+    return RoundedCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'FCM Token (Debug)',
+                style: kSubtitleStyle.copyWith(fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                icon: const Icon(Icons.copy, size: 20),
+                onPressed: () {
+                  if (_fcmToken != null) {
+                    Clipboard.setData(ClipboardData(text: _fcmToken!));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Token copied to clipboard'),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SelectableText(
+            _fcmToken!,
+            style: kBodyStyle.copyWith(
+              fontSize: 10,
+              color: kTextSecondary,
+              fontFamily: 'Courier',
+            ),
+          ),
+        ],
       ),
     );
   }

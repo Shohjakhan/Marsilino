@@ -6,6 +6,7 @@ import '../../theme/app_theme.dart';
 import '../common/gallery_carousel.dart';
 import '../common/primary_button.dart';
 import '../common/rounded_card.dart';
+import 'booking_section.dart';
 import 'redeem_page.dart';
 
 /// Restaurant data model for the landing page.
@@ -310,6 +311,16 @@ class _RestaurantPageState extends State<RestaurantPage> {
               // Menu
               if (_data!.menuImageUrl != null)
                 SliverToBoxAdapter(child: _buildMenuCard()),
+              // Booking
+              SliverToBoxAdapter(
+                child: BookingSection(
+                  restaurantName: _data!.name,
+                  restaurantId: widget.restaurantId!,
+                  bookingAvailable: _data!.bookingAvailable,
+                  maxPeople: _data!.maxPeople,
+                  availableTimes: _data!.availableTimes,
+                ),
+              ),
               // Bottom padding for floating button
               const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
@@ -364,9 +375,9 @@ class _RestaurantPageState extends State<RestaurantPage> {
   }
 
   Widget _buildGallery() {
-    final images = _data!.galleryImages.isNotEmpty
-        ? _data!.galleryImages.map((url) => CarouselNetworkImage(url)).toList()
-        : [const CarouselNetworkImage('https://picsum.photos/800/400')];
+    final images = _data!.galleryImages
+        .map((url) => CarouselNetworkImage(url))
+        .toList();
 
     return GalleryCarousel(
       images: images,

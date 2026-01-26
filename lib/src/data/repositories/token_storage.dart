@@ -7,6 +7,7 @@ class TokenStorage {
   static const _userIdKey = 'user_id';
   static const _userPhoneKey = 'user_phone';
   static const _userNameKey = 'user_name';
+  static const _fcmTokenKey = 'fcm_token';
 
   static TokenStorage? _instance;
   late final FlutterSecureStorage _storage;
@@ -88,6 +89,16 @@ class TokenStorage {
   Future<bool> isLoggedIn() async {
     final token = await getAccessToken();
     return token != null && token.isNotEmpty;
+  }
+
+  /// Save FCM token.
+  Future<void> saveFcmToken(String token) async {
+    await _storage.write(key: _fcmTokenKey, value: token);
+  }
+
+  /// Get FCM token.
+  Future<String?> getFcmToken() async {
+    return await _storage.read(key: _fcmTokenKey);
   }
 
   /// Clear all stored data (logout).
