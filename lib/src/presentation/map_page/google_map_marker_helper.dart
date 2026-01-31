@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../../theme/app_theme.dart';
 import 'package:http/http.dart' as http;
 
 /// Helper class for creating custom Google Maps markers.
@@ -39,7 +40,7 @@ class GoogleMapMarkerHelper {
 
     // Draw circle
     final paint = Paint()
-      ..color = isSelected ? const Color(0xFF2090F9) : const Color(0xFF8E8E93)
+      ..color = isSelected ? kSecondary : kTextSecondary
       ..style = PaintingStyle.fill;
 
     final borderPaint = Paint()
@@ -106,7 +107,7 @@ class GoogleMapMarkerHelper {
 
       // Draw border
       final borderPaint = Paint()
-        ..color = isSelected ? const Color(0xFF2090F9) : Colors.white
+        ..color = isSelected ? kSecondary : Colors.white
         ..style = PaintingStyle.stroke
         ..strokeWidth = isSelected ? 4 : 3;
 

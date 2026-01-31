@@ -328,7 +328,7 @@ class _HomePageState extends State<HomePage> {
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: isSelected ? kPrimary : kCardBg,
+                  color: isSelected ? kSecondary : kCardBg,
                   borderRadius: BorderRadius.circular(20),
                   border: isSelected
                       ? null
@@ -338,7 +338,7 @@ class _HomePageState extends State<HomePage> {
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: kPrimary.withValues(alpha: 0.3),
+                            color: kSecondary.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),

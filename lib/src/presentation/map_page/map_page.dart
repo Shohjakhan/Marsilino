@@ -428,7 +428,7 @@ class _MapPageState extends State<MapPage> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: isSelected ? kPrimary : kCardBg,
+                  color: isSelected ? kSecondary : kCardBg,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: const [kCardShadow],
                 ),
@@ -524,7 +524,7 @@ class _MapPageState extends State<MapPage> {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: kPrimary,
+                              color: kSecondaryLight,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
@@ -562,7 +562,7 @@ class _MapPageState extends State<MapPage> {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: kPrimary.withValues(alpha: 0.1),
+                              color: kSecondaryLight.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
@@ -571,7 +571,7 @@ class _MapPageState extends State<MapPage> {
                                 fontFamily: '.SF Pro Text',
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
-                                color: kPrimary,
+                                color: kSecondaryLight,
                               ),
                             ),
                           );

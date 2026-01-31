@@ -65,7 +65,7 @@ class BottomNav extends StatelessWidget {
         color: kCardBg,
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF101828).withValues(alpha: 0.08),
+            color: kTextPrimary.withValues(alpha: 0.08),
             offset: const Offset(0, -4),
             blurRadius: 16,
           ),

@@ -450,7 +450,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: kPrimary,
+                          color: kSecondaryLight,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -542,7 +542,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: kPrimary.withValues(alpha: 0.1),
+                    color: kSecondaryLight.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
@@ -551,7 +551,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
                       fontFamily: '.SF Pro Text',
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: kPrimary,
+                      color: kSecondaryLight,
                     ),
                   ),
                 );

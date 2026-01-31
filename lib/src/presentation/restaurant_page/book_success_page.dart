@@ -81,10 +81,10 @@ class BookSuccessPage extends StatelessWidget {
       width: 120,
       height: 120,
       decoration: BoxDecoration(
-        color: Colors.green.withValues(alpha: 0.1),
+        color: kSuccess.withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
-      child: const Icon(Icons.check_circle, color: Colors.green, size: 64),
+      child: const Icon(Icons.check_circle, color: kSuccess, size: 64),
     );
   }
 
@@ -100,7 +100,7 @@ class BookSuccessPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: kPrimary.withValues(alpha: 0.1),
+              color: kSecondaryLight.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -108,7 +108,7 @@ class BookSuccessPage extends StatelessWidget {
               style: kTitleStyle.copyWith(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: kPrimary,
+                color: kSecondary,
                 letterSpacing: 1,
               ),
             ),

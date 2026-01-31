@@ -203,7 +203,7 @@ class RestaurantCard extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: kPrimary.withValues(alpha: 0.1),
+            color: kSecondaryLight.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
@@ -212,7 +212,7 @@ class RestaurantCard extends StatelessWidget {
               fontFamily: '.SF Pro Text',
               fontSize: 11,
               fontWeight: FontWeight.w500,
-              color: kPrimary,
+              color: kSecondaryLight,
             ),
           ),
         );
@@ -228,14 +228,14 @@ class RestaurantCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [kPrimary, kPrimaryBold],
+            colors: [kSecondaryLight, kSecondary],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: kPrimary.withValues(alpha: 0.3),
+              color: kSecondary.withValues(alpha: 0.3),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),

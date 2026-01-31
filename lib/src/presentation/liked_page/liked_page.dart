@@ -68,7 +68,7 @@ class _LikedPageState extends State<LikedPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result.error ?? 'Failed to remove from favorites'),
-          backgroundColor: Colors.red,
+          backgroundColor: kError,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -388,7 +388,7 @@ class _LikedRestaurantCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: kPrimary,
+              color: kSecondaryLight,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -407,9 +407,9 @@ class _LikedRestaurantCard extends StatelessWidget {
   Widget _buildRemoveButton() {
     return IconButton(
       onPressed: onRemove,
-      icon: const Icon(Icons.favorite, color: Colors.red),
+      icon: const Icon(Icons.favorite, color: kError),
       style: IconButton.styleFrom(
-        backgroundColor: Colors.red.withValues(alpha: 0.1),
+        backgroundColor: kError.withValues(alpha: 0.1),
       ),
     );
   }

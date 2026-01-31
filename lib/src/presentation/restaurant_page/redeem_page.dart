@@ -113,7 +113,7 @@ class _RedeemPageState extends State<RedeemPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(result.error ?? 'Transaction failed'),
-                backgroundColor: Colors.red,
+                backgroundColor: kError,
               ),
             );
           }
@@ -125,7 +125,7 @@ class _RedeemPageState extends State<RedeemPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('An error occurred: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: kError,
         ),
       );
     }
@@ -296,7 +296,7 @@ class _RedeemPageState extends State<RedeemPage> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: kPrimary,
+                    color: kSecondaryLight,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -373,11 +373,11 @@ class _RedeemPageState extends State<RedeemPage> {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.red),
+          borderSide: const BorderSide(color: kError),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.red, width: 1.5),
+          borderSide: const BorderSide(color: kError, width: 1.5),
         ),
       ),
     );
@@ -423,11 +423,11 @@ class _RedeemPageState extends State<RedeemPage> {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.red),
+          borderSide: const BorderSide(color: kError),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.red, width: 1.5),
+          borderSide: const BorderSide(color: kError, width: 1.5),
         ),
       ),
     );
@@ -491,7 +491,7 @@ class _RedeemPageState extends State<RedeemPage> {
           value,
           style: kBodyStyle.copyWith(
             color: isDiscount
-                ? Colors.green
+                ? kSuccess
                 : isFinal
                 ? kTextPrimary
                 : kTextSecondary,
@@ -521,10 +521,10 @@ class _RedeemPageState extends State<RedeemPage> {
           width: 100,
           height: 100,
           decoration: BoxDecoration(
-            color: Colors.green.withValues(alpha: 0.1),
+            color: kSuccess.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.check_circle, size: 64, color: Colors.green),
+          child: const Icon(Icons.check_circle, size: 64, color: kSuccess),
         ),
         const SizedBox(height: 24),
         Text('Discount Applied!', style: kTitleStyle.copyWith(fontSize: 24)),
@@ -619,7 +619,7 @@ class _RedeemPageState extends State<RedeemPage> {
           style: TextStyle(
             fontFamily: '.SF Pro Text',
             color: isDiscount
-                ? Colors.green
+                ? kSuccess
                 : isFinal
                 ? kTextPrimary
                 : kTextSecondary,
@@ -642,15 +642,15 @@ class _RedeemPageState extends State<RedeemPage> {
           width: 100,
           height: 100,
           decoration: BoxDecoration(
-            color: Colors.red.withValues(alpha: 0.1),
+            color: kError.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.error_outline, size: 64, color: Colors.red),
+          child: const Icon(Icons.error_outline, size: 64, color: kError),
         ),
         const SizedBox(height: 24),
         Text(
           errorData['title']!,
-          style: kTitleStyle.copyWith(fontSize: 24, color: Colors.red),
+          style: kTitleStyle.copyWith(fontSize: 24, color: kError),
         ),
         const SizedBox(height: 32),
         // Error card
@@ -658,16 +658,16 @@ class _RedeemPageState extends State<RedeemPage> {
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.red.withValues(alpha: 0.05),
+            color: kError.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(kCardRadius),
-            border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+            border: Border.all(color: kError.withValues(alpha: 0.2)),
           ),
           child: Column(
             children: [
               Icon(
                 _getErrorIcon(),
                 size: 48,
-                color: Colors.red.withValues(alpha: 0.7),
+                color: kError.withValues(alpha: 0.7),
               ),
               const SizedBox(height: 16),
               Text(

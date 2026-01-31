@@ -217,14 +217,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: kPrimary.withValues(alpha: 0.15),
+            color: iconType == 'discount'
+                ? kSuccess.withValues(alpha: 0.15)
+                : kPrimary.withValues(alpha: 0.15),
             blurRadius: 60,
             offset: const Offset(0, 10),
           ),
         ],
       ),
       alignment: Alignment.center,
-      child: Icon(icon, size: 100, color: kPrimary),
+      child: Icon(
+        icon,
+        size: 100,
+        color: iconType == 'discount' ? kSuccess : kPrimary,
+      ),
     );
   }
 }

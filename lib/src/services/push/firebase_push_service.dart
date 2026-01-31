@@ -13,8 +13,8 @@ class FirebasePushService {
     // Request permission for iOS/Web
     await _requestPermission();
 
-    // Get and save token
-    final token = await _firebaseMessaging.getToken();
+    // Get and save token (with iOS APNS handling)
+    final token = await _getTokenSafely();
     if (token != null) {
       if (kDebugMode) {
         print('FCM Token: $token');
@@ -28,6 +28,31 @@ class FirebasePushService {
     // Setup message handlers
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  }
+
+  /// Get FCM token safely, handling iOS APNS token availability.
+  Future<String?> _getTokenSafely() async {
+    // On iOS, we need to wait for APNS token before getting FCM token
+    if (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS) {
+      // Wait for APNS token with retries
+      String? apnsToken;
+      for (int i = 0; i < 5; i++) {
+        apnsToken = await _firebaseMessaging.getAPNSToken();
+        if (apnsToken != null) break;
+        // Wait before retrying
+        await Future.delayed(const Duration(seconds: 1));
+      }
+
+      if (apnsToken == null) {
+        if (kDebugMode) {
+          print('Warning: APNS token not available after retries');
+        }
+        return null;
+      }
+    }
+
+    return await _firebaseMessaging.getToken();
   }
 
   Future<void> _requestPermission() async {

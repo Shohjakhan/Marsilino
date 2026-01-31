@@ -7,23 +7,38 @@ import 'package:flutter/material.dart';
 // COLORS
 // =============================================================================
 
-/// Primary brand color
-const Color kPrimary = Color(0xFF2090F9);
+/// Primary brand color (CTA) - Bright Crimson
+const Color kPrimary = Color(0xFFBC2749);
 
-/// Bold/darker variant of primary color
-const Color kPrimaryBold = Color(0xFF1566B2);
+/// Bold/darker variant of primary color - Dark Crimson
+const Color kPrimaryBold = Color(0xFF8B1E3F);
+
+/// Secondary color (trust/success)
+const Color kSecondary = Color(0xFF2F5D3D);
+
+/// Secondary light variant
+const Color kSecondaryLight = Color(0xFF4F7A63);
+
+/// Accent color (badges)
+const Color kAccent = Color(0xFFD9746F);
 
 /// App background color
-const Color kBackground = Color(0xFFD9EDFF);
+const Color kBackground = Color(0xFFFFF7F6);
 
-/// Card background color
+/// Card/surface background color
 const Color kCardBg = Color(0xFFFFFFFF);
 
 /// Primary text color
-const Color kTextPrimary = Color(0xFF0D1A2B);
+const Color kTextPrimary = Color(0xFF1C1C1C);
 
 /// Secondary/muted text color
-const Color kTextSecondary = Color(0xFF6B7C93);
+const Color kTextSecondary = Color(0xFF6B6B6B);
+
+/// Success color
+const Color kSuccess = Color(0xFF2F5D3D);
+
+/// Error color
+const Color kError = Color(0xFFBF3B3B);
 
 // =============================================================================
 // RADII
@@ -125,11 +140,11 @@ InputDecoration kInputDecoration({
     ),
     errorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(kButtonRadius),
-      borderSide: const BorderSide(color: Colors.red, width: 1),
+      borderSide: const BorderSide(color: kError, width: 1),
     ),
     focusedErrorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(kButtonRadius),
-      borderSide: const BorderSide(color: Colors.red, width: 2),
+      borderSide: const BorderSide(color: kError, width: 2),
     ),
   );
 }
@@ -175,11 +190,11 @@ class AppTheme {
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(kButtonRadius),
-        borderSide: const BorderSide(color: Colors.red, width: 1),
+        borderSide: const BorderSide(color: kError, width: 1),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(kButtonRadius),
-        borderSide: const BorderSide(color: Colors.red, width: 2),
+        borderSide: const BorderSide(color: kError, width: 2),
       ),
       hintStyle: kBodyStyle.copyWith(color: kTextSecondary),
       labelStyle: kBodyStyle.copyWith(color: kTextSecondary),
