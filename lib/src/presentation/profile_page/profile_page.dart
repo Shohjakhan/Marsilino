@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:restaurant/l10n/gen/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../data/repositories/transactions_repository.dart';
+import '../../data/repositories/bookings_repository.dart';
+import '../../data/repositories/restaurants_repository.dart';
+import '../../data/models/booking_response_model.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/locale_provider.dart';
 import '../common/rounded_card.dart';
@@ -25,6 +28,8 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final _transactionsRepository = TransactionsRepository();
+  final _bookingsRepository = BookingsRepository();
+  final _restaurantsRepository = RestaurantsRepository();
   final _userRepository = UserRepository();
   late Future<UserModel> _userFuture;
   String? _fcmToken;
@@ -32,11 +37,16 @@ class _ProfilePageState extends State<ProfilePage> {
   List<Transaction> _transactions = [];
   bool _isLoadingTransactions = true;
 
+  List<BookingResponse> _bookings = [];
+  bool _isLoadingBookings = true;
+  final Map<String, String> _restaurantNames = {}; // Cache for restaurant names
+
   @override
   void initState() {
     super.initState();
     _userFuture = _userRepository.getMe();
     _loadTransactions();
+    _loadBookings();
     _loadFcmToken();
   }
 
@@ -59,11 +69,49 @@ class _ProfilePageState extends State<ProfilePage> {
         _transactions = result.transactions;
         // Sort by date desc
         _transactions.sort((a, b) => b.date.compareTo(a.date));
-      } else {
-        // Show error snackbar?
-        // Just leave empty list for now or show error
       }
     });
+  }
+
+  Future<void> _loadBookings() async {
+    final result = await _bookingsRepository.getUserBookings();
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingBookings = false;
+      if (result.success) {
+        _bookings = result.bookings;
+        // Sort by date (future first)
+        // Need to parse date string
+        _bookings.sort((a, b) => b.date.compareTo(a.date));
+
+        // Fetch restaurant names for bookings
+        _fetchRestaurantNames();
+      }
+    });
+  }
+
+  Future<void> _fetchRestaurantNames() async {
+    for (final booking in _bookings) {
+      if (!_restaurantNames.containsKey(booking.restaurant)) {
+        // Assume booking.restaurant is the ID
+        try {
+          // We can't easily get just the name without fetching details
+          final result = await _restaurantsRepository.getRestaurantDetail(
+            booking.restaurant,
+          );
+          if (result.restaurant != null) {
+            if (mounted) {
+              setState(() {
+                _restaurantNames[booking.restaurant] = result.restaurant!.name;
+              });
+            }
+          }
+        } catch (e) {
+          // Ignore errors
+        }
+      }
+    }
   }
 
   void _handleLogout() {
@@ -148,6 +196,9 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 24),
               // Stats summary
               _buildStatsSummary(),
+              const SizedBox(height: 24),
+              // Bookings list
+              _buildBookingsList(),
               const SizedBox(height: 24),
               // Transaction history
               _buildTransactionHistory(),
@@ -662,6 +713,137 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     return buffer.toString();
+  }
+
+  Widget _buildBookingsList() {
+    if (_isLoadingBookings) {
+      return const SizedBox(
+        height: 100,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_bookings.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Upcoming Reservations',
+              style: kSubtitleStyle.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        ..._bookings.map((booking) => _buildBookingItem(booking)),
+      ],
+    );
+  }
+
+  Widget _buildBookingItem(BookingResponse booking) {
+    // Get restaurant name from cache or fallback to ID
+    final restaurantName = _restaurantNames[booking.restaurant] ?? 'Restaurant';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: kCardBg,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [kCardShadow],
+        border: Border.all(color: kPrimary.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: kPrimary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.event_available,
+                  color: kPrimary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      restaurantName,
+                      style: kBodyStyle.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Ref: #${booking.btid}',
+                      style: kBodyStyle.copyWith(
+                        fontSize: 12,
+                        color: kTextSecondary,
+                        fontFamily: 'Courier',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: kSecondary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      booking.time,
+                      style: kBodyStyle.copyWith(
+                        color: kSecondary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(Icons.calendar_today, size: 14, color: kTextSecondary),
+              const SizedBox(width: 6),
+              Text(
+                booking.date,
+                style: kBodyStyle.copyWith(fontSize: 13, color: kTextSecondary),
+              ),
+              const SizedBox(width: 16),
+              Icon(Icons.people_outline, size: 14, color: kTextSecondary),
+              const SizedBox(width: 6),
+              Text(
+                '${booking.numberOfPeople} guests',
+                style: kBodyStyle.copyWith(fontSize: 13, color: kTextSecondary),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 

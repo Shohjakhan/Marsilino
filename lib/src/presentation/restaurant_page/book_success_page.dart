@@ -104,7 +104,7 @@ class BookSuccessPage extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              booking.reference,
+              '#${booking.btid}',
               style: kTitleStyle.copyWith(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -151,14 +151,6 @@ class BookSuccessPage extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Status: ${booking.status}',
-                      style: kBodyStyle.copyWith(
-                        color: kTextSecondary,
-                        fontSize: 13,
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -169,7 +161,7 @@ class BookSuccessPage extends StatelessWidget {
           const SizedBox(height: 16),
           _buildSummaryRow(
             Icons.people_outline,
-            '${booking.people} ${booking.people == 1 ? 'Guest' : 'Guests'}',
+            '${booking.numberOfPeople} ${booking.numberOfPeople == 1 ? 'Guest' : 'Guests'}',
           ),
           const SizedBox(height: 12),
           _buildSummaryRow(Icons.calendar_today, _formatDate(booking.date)),

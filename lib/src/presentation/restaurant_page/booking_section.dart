@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../theme/app_theme.dart';
@@ -31,6 +32,8 @@ class _BookingSectionState extends State<BookingSection> {
   int _peopleCount = 4;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
+  final _dateController = TextEditingController();
+  final _timeController = TextEditingController();
   final _commentsController = TextEditingController();
 
   // Track if the user has started interacting with the form
@@ -38,6 +41,8 @@ class _BookingSectionState extends State<BookingSection> {
 
   @override
   void dispose() {
+    _dateController.dispose();
+    _timeController.dispose();
     _commentsController.dispose();
     super.dispose();
   }
@@ -100,36 +105,55 @@ class _BookingSectionState extends State<BookingSection> {
       _onInteraction();
       setState(() {
         _selectedDate = picked;
+        _dateController.text = DateFormat('MMM d, yyyy').format(picked);
       });
     }
   }
 
   Future<void> _pickTime() async {
-    final now = TimeOfDay.now();
-    final picked = await showTimePicker(
+    final now = DateTime.now();
+    final initialDateTime = _selectedTime != null
+        ? DateTime(
+            now.year,
+            now.month,
+            now.day,
+            _selectedTime!.hour,
+            _selectedTime!.minute,
+          )
+        : now;
+
+    await showCupertinoModalPopup<void>(
       context: context,
-      initialTime: _selectedTime ?? now,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: kPrimary,
-              onPrimary: Colors.white,
-              surface: kCardBg,
-              onSurface: kTextPrimary,
+      builder: (BuildContext context) {
+        return Container(
+          height: 216,
+          padding: const EdgeInsets.only(top: 6.0),
+          margin: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          color: kCardBg,
+          child: SafeArea(
+            top: false,
+            child: CupertinoDatePicker(
+              initialDateTime: initialDateTime,
+              mode: CupertinoDatePickerMode.time,
+              use24hFormat: true,
+              onDateTimeChanged: (DateTime newDateTime) {
+                _onInteraction();
+                final time = TimeOfDay.fromDateTime(newDateTime);
+                setState(() {
+                  _selectedTime = time;
+                  // Force 24h format string manually
+                  final hour = time.hour.toString().padLeft(2, '0');
+                  final minute = time.minute.toString().padLeft(2, '0');
+                  _timeController.text = '$hour:$minute';
+                });
+              },
             ),
           ),
-          child: child!,
         );
       },
     );
-
-    if (picked != null) {
-      _onInteraction();
-      setState(() {
-        _selectedTime = picked;
-      });
-    }
   }
 
   void _selectSuggestedTime(String timeStr) {
@@ -138,8 +162,10 @@ class _BookingSectionState extends State<BookingSection> {
       final parts = timeStr.split(':');
       final hour = int.parse(parts[0]);
       final minute = int.parse(parts[1]);
+      final time = TimeOfDay(hour: hour, minute: minute);
       setState(() {
-        _selectedTime = TimeOfDay(hour: hour, minute: minute);
+        _selectedTime = time;
+        _timeController.text = time.format(context);
       });
     } catch (e) {
       // Ignore invalid format
@@ -197,24 +223,22 @@ class _BookingSectionState extends State<BookingSection> {
           Row(
             children: [
               Expanded(
-                child: _buildDateTimeSelector(
+                child: InputField(
+                  controller: _dateController,
+                  placeholder: 'Date',
                   icon: Icons.calendar_today,
-                  label: _selectedDate == null
-                      ? 'Date'
-                      : DateFormat('MMM d').format(_selectedDate!),
+                  readOnly: true,
                   onTap: _pickDate,
-                  isSelected: _selectedDate != null,
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: _buildDateTimeSelector(
+                child: InputField(
+                  controller: _timeController,
+                  placeholder: 'Time',
                   icon: Icons.access_time,
-                  label: _selectedTime == null
-                      ? 'Time'
-                      : _selectedTime!.format(context),
+                  readOnly: true,
                   onTap: _pickTime,
-                  isSelected: _selectedTime != null,
                 ),
               ),
             ],
@@ -383,46 +407,6 @@ class _BookingSectionState extends State<BookingSection> {
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Icon(icon, size: 20, color: kTextPrimary),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDateTimeSelector({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    required bool isSelected,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        _onInteraction();
-        onTap();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: isSelected ? kPrimary.withValues(alpha: 0.1) : kBackground,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? kPrimary
-                : kTextSecondary.withValues(alpha: 0.2),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: isSelected ? kPrimary : kTextSecondary),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? kPrimary : kTextPrimary,
-              ),
-            ),
-          ],
         ),
       ),
     );

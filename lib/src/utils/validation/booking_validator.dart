@@ -6,12 +6,14 @@ class BookingData {
   final DateTime? date;
   final TimeOfDay? time;
   final String? comments;
+  final String? phoneNumber;
 
   const BookingData({
     required this.people,
     this.date,
     this.time,
     this.comments,
+    this.phoneNumber,
   });
 
   BookingData copyWith({
@@ -19,18 +21,20 @@ class BookingData {
     DateTime? date,
     TimeOfDay? time,
     String? comments,
+    String? phoneNumber,
   }) {
     return BookingData(
       people: people ?? this.people,
       date: date ?? this.date,
       time: time ?? this.time,
       comments: comments ?? this.comments,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
     );
   }
 
   @override
   String toString() {
-    return 'BookingData(people: $people, date: $date, time: $time, comments: $comments)';
+    return 'BookingData(people: $people, date: $date, time: $time, comments: $comments, phoneNumber: $phoneNumber)';
   }
 
   @override
@@ -40,12 +44,13 @@ class BookingData {
         other.people == people &&
         other.date == date &&
         other.time == time &&
-        other.comments == comments;
+        other.comments == comments &&
+        other.phoneNumber == phoneNumber;
   }
 
   @override
   int get hashCode {
-    return Object.hash(people, date, time, comments);
+    return Object.hash(people, date, time, comments, phoneNumber);
   }
 }
 

@@ -8,6 +8,7 @@ import '../common/primary_button.dart';
 import '../common/rounded_card.dart';
 import 'booking_section.dart';
 import 'redeem_page.dart';
+import '../common/navigation_notifications.dart';
 
 /// Restaurant data model for the landing page.
 class RestaurantData {
@@ -29,6 +30,8 @@ class RestaurantData {
   final bool? bookingAvailable;
   final int? maxPeople;
   final List<String>? availableTimes;
+  final double? latitude;
+  final double? longitude;
 
   const RestaurantData({
     required this.name,
@@ -47,6 +50,8 @@ class RestaurantData {
     this.bookingAvailable,
     this.maxPeople,
     this.availableTimes,
+    this.latitude,
+    this.longitude,
   });
 
   /// Extract discount percentage from discount string (e.g., "10% off" -> 10).
@@ -68,12 +73,15 @@ class RestaurantData {
       tags: r.tagsList,
       galleryImages: r.galleryImages,
       logoUrl: r.logo,
+      menuImageUrl: r.menuUrl,
       discount: r.discountText,
       instagram: r.instagram,
       telegram: r.telegram,
       bookingAvailable: r.bookingAvailable,
       maxPeople: r.maxPeople,
       availableTimes: r.availableTimes,
+      latitude: r.latitude,
+      longitude: r.longitude,
     );
   }
 }
@@ -214,6 +222,20 @@ class _RestaurantPageState extends State<RestaurantPage> {
     );
   }
 
+  void _navigateToMap() {
+    if (_data == null) return;
+
+    // Close current page first
+    Navigator.pop(context);
+
+    // Dispatch notification to shell
+    NavigateToMapNotification(
+      latitude: _data!.latitude,
+      longitude: _data!.longitude,
+      restaurantId: widget.restaurantId,
+    ).dispatch(context);
+  }
+
   void _redeemDiscount() {
     if (_data == null) return;
     if (widget.restaurantId == null) {
@@ -313,12 +335,15 @@ class _RestaurantPageState extends State<RestaurantPage> {
                 SliverToBoxAdapter(child: _buildMenuCard()),
               // Booking
               SliverToBoxAdapter(
-                child: BookingSection(
-                  restaurantName: _data!.name,
-                  restaurantId: widget.restaurantId!,
-                  bookingAvailable: _data!.bookingAvailable,
-                  maxPeople: _data!.maxPeople,
-                  availableTimes: _data!.availableTimes,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: BookingSection(
+                    restaurantName: _data!.name,
+                    restaurantId: widget.restaurantId!,
+                    bookingAvailable: _data!.bookingAvailable,
+                    maxPeople: _data!.maxPeople,
+                    availableTimes: _data!.availableTimes,
+                  ),
                 ),
               ),
               // Bottom padding for floating button
@@ -608,9 +633,13 @@ class _RestaurantPageState extends State<RestaurantPage> {
             ),
             const SizedBox(height: 16),
             // Address
-            _buildContactRow(
-              icon: Icons.location_on_outlined,
-              text: _data!.address,
+            GestureDetector(
+              onTap: _navigateToMap,
+              child: _buildContactRow(
+                icon: Icons.location_on_outlined,
+                text: _data!.address,
+                isActive: true,
+              ),
             ),
             const SizedBox(height: 12),
             // Phone

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../data/models/booking_request_model.dart';
 import '../../data/repositories/bookings_repository.dart';
+import '../../data/repositories/token_storage.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/validation/booking_validator.dart';
 import '../common/primary_button.dart';
@@ -37,9 +38,13 @@ class _BookConfirmPageState extends State<BookConfirmPage> {
     });
 
     try {
+      // Get phone from user's stored profile
+      final phone = await TokenStorage.instance.getUserPhone() ?? '';
+
       // Create booking request
       final request = BookingRequest.fromBookingData(
         restaurantId: widget.restaurantId,
+        phoneNumber: phone,
         bookingData: widget.bookingData,
       );
 
