@@ -3,6 +3,7 @@
 ## Project Overview
 
 **Discount App** is a backend system for a restaurant discount loyalty program. It enables:
+
 - **Mobile users** to discover restaurants, earn discounts, and track transactions
 - **Restaurant admins** to manage their restaurant, cashiers, and view customer analytics
 - **Cashiers** to process transactions at POS terminals
@@ -40,6 +41,7 @@
 ## User Roles & Authentication
 
 ### 1. Mobile User (Customer)
+
 - **Auth Method**: Phone number + OTP (One-Time Password)
 - **Flow**:
   1. User enters phone number → `POST /api/auth/request-otp/`
@@ -82,8 +84,8 @@
 └─────────────────────────────────────────────────────────────┘
 ```
 
-
 ### 2. Restaurant Admin
+
 - **Auth Method**: Phone number + Password
 - **Flow**:
   1. Admin enters phone + password
@@ -92,6 +94,7 @@
 - **Capabilities**: Full control over their restaurant settings, cashiers, and customer analytics
 
 ### 3. Cashier
+
 - **Auth Method**: Restaurant ID + Phone + 4-digit PIN
 - **Flow**:
   1. Cashier selects restaurant and enters phone + PIN
@@ -104,6 +107,7 @@
 ## Data Models
 
 ### `CustomUser` (accounts)
+
 The main user model for all human users.
 | Field | Type | Description |
 |-------|------|-------------|
@@ -115,6 +119,7 @@ The main user model for all human users.
 | is_active | Boolean | Account status |
 
 ### `PhoneOTP` (accounts)
+
 Manages OTP codes for mobile authentication.
 | Field | Type | Description |
 |-------|------|-------------|
@@ -125,6 +130,7 @@ Manages OTP codes for mobile authentication.
 | attempt_count | Int | Failed attempts (max 3) |
 
 ### `RestaurantAdmin` (accounts)
+
 Links a user to a restaurant for admin access.
 | Field | Type | Description |
 |-------|------|-------------|
@@ -132,6 +138,7 @@ Links a user to a restaurant for admin access.
 | restaurant | FK → Restaurant | The managed restaurant |
 
 ### `Restaurant` (restaurants)
+
 Core restaurant entity.
 | Field | Type | Description |
 |-------|------|-------------|
@@ -147,6 +154,7 @@ Core restaurant entity.
 | discount_percentage | Decimal | Loyalty discount % |
 
 ### `Cashier` (restaurants)
+
 Restaurant employees who process transactions.
 | Field | Type | Description |
 |-------|------|-------------|
@@ -157,6 +165,7 @@ Restaurant employees who process transactions.
 | is_active | Boolean | Can login |
 
 ### `Transaction` (transactions)
+
 Records of customer purchases.
 | Field | Type | Description |
 |-------|------|-------------|
@@ -174,38 +183,101 @@ Records of customer purchases.
 
 ### Public Endpoints (No Auth)
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `POST /api/auth/request-otp/` | POST | Request OTP for phone login |
-| `POST /api/auth/verify-otp/` | POST | Verify OTP → get JWT tokens |
-| `GET /api/restaurants/` | GET | List all restaurants (basic info) |
-| `GET /api/restaurants/{id}/` | GET | Restaurant detail (full info) |
-| `POST /api/restaurants/cashier/auth/login/` | POST | Cashier PIN login |
-| `GET /api/docs/` | GET | Swagger API documentation |
+| Endpoint                                    | Method | Description                       |
+| ------------------------------------------- | ------ | --------------------------------- |
+| `POST /api/auth/request-otp/`               | POST   | Request OTP for phone login       |
+| `POST /api/auth/verify-otp/`                | POST   | Verify OTP → get JWT tokens       |
+| `GET /api/restaurants/`                     | GET    | List all restaurants (basic info) |
+| `GET /api/restaurants/{id}/`                | GET    | Restaurant detail (full info)     |
+| `POST /api/restaurants/cashier/auth/login/` | POST   | Cashier PIN login                 |
+| `GET /api/docs/`                            | GET    | Swagger API documentation         |
 
 ---
 
 ### Mobile User Endpoints (JWT Required)
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `GET /api/me/` | GET | Get current user's profile |
-| `PATCH /api/me/` | PATCH | Update profile (full_name) |
-| `POST /api/me/liked-restaurants/{id}/add/` | POST | Add restaurant to favorites |
-| `POST /api/me/liked-restaurants/{id}/remove/` | POST | Remove from favorites |
-| `GET /api/me/transactions/` | GET | User's transaction history (paginated) |
+| Endpoint                                      | Method | Description                            |
+| --------------------------------------------- | ------ | -------------------------------------- |
+| `GET /api/me/`                                | GET    | Get current user's profile             |
+| `PATCH /api/me/`                              | PATCH  | Update profile (full_name)             |
+| `POST /api/me/liked-restaurants/{id}/add/`    | POST   | Add restaurant to favorites            |
+| `POST /api/me/liked-restaurants/{id}/remove/` | POST   | Remove from favorites                  |
+| `GET /api/me/transactions/`                   | GET    | User's transaction history (paginated) |
+| `POST /api/restaurants/book-table/`           | POST   | Book a table at a restaurant           |
+
+#### Book Table API
+
+**Endpoint:** `POST /api/restaurants/book-table/`  
+**Auth:** Required (Bearer token)
+
+**Request Body:**
+
+```json
+{
+  "restaurant": "c7201c10-d864-42d8-bf9d-21014cc614a9",
+  "customer_phone_number": "+998901234567",
+  "number_of_people": 4,
+  "date": "2026-05-20",
+  "time": "19:00",
+  "comment": "Window seat"
+}
+```
+
+**Success Response (201 Created):**
+
+```json
+{
+  "BTID": 105,
+  "user": 5,
+  "restaurant": "c7201c10-d864-42d8-bf9d-21014cc614a9",
+  "customer_phone_number": "+998901234567",
+  "number_of_people": 4,
+  "date": "2026-05-20",
+  "time": "19:00",
+  "comment": "Window seat"
+}
+```
+
+#### Liked Restaurants API
+
+**Endpoint:** `POST /api/me/liked-restaurants/<restaurant_id>/<action>/`  
+**Auth:** Required (Bearer token)
+
+**Parameters:**
+
+- `restaurant_id`: UUID of the restaurant
+- `action`: `add` or `remove`
+
+**Examples:**
+
+- **Add:** `POST /api/me/liked-restaurants/3fa85f64.../add/`
+- **Remove:** `POST /api/me/liked-restaurants/3fa85f64.../remove/`
+
+**Success Response (200 OK):**
+
+```json
+{
+  "message": "Added Marsilino Pizza to liked restaurants",
+  "liked_restaurants": [
+    "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "c7201c10-d864-42d8-bf9d-21014cc614a9"
+  ]
+}
+```
 
 ---
 
 ### Restaurant Admin Endpoints (JWT + IsRestaurantAdmin)
 
 #### Users Management
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `GET /api/restaurant-admin/users/` | GET | List customers with transaction stats |
-| `GET /api/restaurant-admin/users/export/` | GET | Export to Excel (.xlsx) |
+
+| Endpoint                                  | Method | Description                           |
+| ----------------------------------------- | ------ | ------------------------------------- |
+| `GET /api/restaurant-admin/users/`        | GET    | List customers with transaction stats |
+| `GET /api/restaurant-admin/users/export/` | GET    | Export to Excel (.xlsx)               |
 
 **User Stats Returned**:
+
 - `total_transactions` - Number of visits
 - `total_spent_before_discount` - Gross spending
 - `total_discount_amount` - Total savings given
@@ -213,41 +285,47 @@ Records of customer purchases.
 - `last_transaction_date` - Most recent visit
 
 **Filters**:
+
 - `date_from`, `date_to` - Transaction date range
 - `min_spent`, `max_spent` - Spending range
 - `min_transactions`, `max_transactions` - Visit count range
 - `search` - Phone or name search
 
 #### Cashier Management
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `GET /api/restaurant-admin/cashiers/` | GET | List all cashiers |
-| `POST /api/restaurant-admin/cashiers/` | POST | Create cashier (returns PIN once) |
-| `PATCH /api/restaurant-admin/cashiers/{id}/` | PATCH | Update cashier info |
-| `POST /api/restaurant-admin/cashiers/{id}/regenerate-pin/` | POST | Generate new PIN |
+
+| Endpoint                                                   | Method | Description                       |
+| ---------------------------------------------------------- | ------ | --------------------------------- |
+| `GET /api/restaurant-admin/cashiers/`                      | GET    | List all cashiers                 |
+| `POST /api/restaurant-admin/cashiers/`                     | POST   | Create cashier (returns PIN once) |
+| `PATCH /api/restaurant-admin/cashiers/{id}/`               | PATCH  | Update cashier info               |
+| `POST /api/restaurant-admin/cashiers/{id}/regenerate-pin/` | POST   | Generate new PIN                  |
 
 #### Restaurant Settings
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `GET /api/restaurant-admin/restaurant/` | GET | Get restaurant settings |
-| `PATCH /api/restaurant-admin/restaurant/` | PATCH | Update settings |
-| `POST /api/restaurant-admin/restaurant/gallery/` | POST | Upload gallery image |
+
+| Endpoint                                         | Method | Description             |
+| ------------------------------------------------ | ------ | ----------------------- |
+| `GET /api/restaurant-admin/restaurant/`          | GET    | Get restaurant settings |
+| `PATCH /api/restaurant-admin/restaurant/`        | PATCH  | Update settings         |
+| `POST /api/restaurant-admin/restaurant/gallery/` | POST   | Upload gallery image    |
 
 ---
 
 ## Security Features
 
 ### Rate Limiting (OTP)
+
 - 1 minute cooldown between OTP requests
 - Maximum 5 OTPs per hour per phone number
 - Returns HTTP 429 when exceeded
 
 ### PIN Security (Cashiers)
+
 - PINs stored using Django's password hashing (bcrypt)
 - Never returned after initial creation
 - Regenerate creates new PIN, invalidates old
 
 ### JWT Tokens
+
 - Access token: 1 day lifetime
 - Refresh token: 30 days lifetime
 - Bearer token in Authorization header
@@ -263,11 +341,12 @@ Records of customer purchases.
 # Tests include:
 # - OTP request/verify flows
 # - Admin authentication
-# - Cashier PIN authentication  
+# - Cashier PIN authentication
 # - Permission enforcement
 ```
 
 **16 tests total**, covering:
+
 - OTP creation, verification, expiration, reuse prevention
 - Admin login, data isolation
 - Cashier PIN validation, inactive rejection

@@ -14,8 +14,7 @@ class BottomNavItem {
   });
 }
 
-/// Custom bottom navigation bar with 4 tabs.
-/// Height 70, icons + labels, PRIMARY color for active state.
+/// Custom floating bottom navigation bar with animated circle indicator.
 class BottomNav extends StatelessWidget {
   /// Currently selected tab index.
   final int currentIndex;
@@ -60,62 +59,101 @@ class BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
       height: 70,
       decoration: BoxDecoration(
         color: kCardBg,
+        borderRadius: BorderRadius.circular(35),
         boxShadow: [
           BoxShadow(
             color: kTextPrimary.withValues(alpha: 0.08),
-            offset: const Offset(0, -4),
-            blurRadius: 16,
+            offset: const Offset(0, 8),
+            blurRadius: 24,
           ),
         ],
       ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: List.generate(
-            items.length,
-            (index) => _buildNavItem(index),
+      child: Stack(
+        children: [
+          // Animated circle indicator
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            left: _getIndicatorPosition(context),
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: kCardBg,
+                  border: Border.all(
+                    color: kTextSecondary.withValues(alpha: 0.15),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: kPrimary.withValues(alpha: 0.15),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
+          // Navigation items row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(
+              items.length,
+              (index) => _buildNavItem(index),
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  double _getIndicatorPosition(BuildContext context) {
+    // Calculate position based on item index
+    // Container width minus margins = screen width - 48
+    // Each item takes equal space
+    final screenWidth = MediaQuery.of(context).size.width;
+    final containerWidth = screenWidth - 48; // 24px margin each side
+    final itemWidth = containerWidth / items.length;
+    // Center of the item minus half the indicator width (56/2 = 28)
+    return (itemWidth * currentIndex) + (itemWidth / 2) - 28;
   }
 
   Widget _buildNavItem(int index) {
     final item = items[index];
     final isActive = index == currentIndex;
 
-    return GestureDetector(
-      onTap: () => onTap(index),
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 64,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedSwitcher(
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onTap(index),
+        behavior: HitTestBehavior.opaque,
+        child: SizedBox(
+          height: 70,
+          child: Center(
+            child: AnimatedScale(
+              scale: isActive ? 1.1 : 1.0,
               duration: const Duration(milliseconds: 200),
-              child: Icon(
-                isActive ? item.activeIcon : item.icon,
-                key: ValueKey('${item.label}_$isActive'),
-                color: isActive ? kPrimary : kTextSecondary,
-                size: 24,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: Icon(
+                  isActive ? item.activeIcon : item.icon,
+                  key: ValueKey('${item.label}_$isActive'),
+                  color: isActive
+                      ? kPrimary
+                      : kTextSecondary.withValues(alpha: 0.6),
+                  size: isActive ? 28 : 24,
+                ),
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              item.label,
-              style: TextStyle(
-                fontFamily: '.SF Pro Text',
-                fontSize: 12,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                color: isActive ? kPrimary : kTextSecondary,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

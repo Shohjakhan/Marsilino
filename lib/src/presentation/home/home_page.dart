@@ -4,6 +4,7 @@ import '../../data/repositories/restaurants_repository.dart';
 import '../../theme/app_theme.dart';
 import '../common/restaurant_card.dart';
 import '../restaurant_page/restaurant_page.dart';
+import '../../services/location_service.dart';
 
 /// Home page - Main discovery screen with search, filters, and restaurant list.
 class HomePage extends StatefulWidget {
@@ -21,19 +22,10 @@ class _HomePageState extends State<HomePage> {
   List<Restaurant> _filteredRestaurants = [];
   bool _isLoading = true;
   String? _error;
+  String? _currentLocation;
+  final LocationService _locationService = LocationService();
 
-  static const List<String> _filterOptions = [
-    'Family',
-    'Bars',
-    'Korean',
-    'Halal',
-    'Italian',
-    'Fast Food',
-    'Vegetarian',
-    'Seafood',
-    'Desserts',
-    'Coffee',
-  ];
+  List<String> _filterOptions = [];
 
   final Set<String> _selectedFilters = {};
 
@@ -41,6 +33,26 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadRestaurants();
+    _initLocation();
+    _loadTags();
+  }
+
+  Future<void> _loadTags() async {
+    final tags = await _repository.getFilterTags();
+    if (mounted) {
+      setState(() {
+        _filterOptions = tags;
+      });
+    }
+  }
+
+  Future<void> _initLocation() async {
+    final locationName = await _locationService.getCurrentLocationName();
+    if (mounted) {
+      setState(() {
+        _currentLocation = locationName;
+      });
+    }
   }
 
   @override
@@ -158,6 +170,8 @@ class _HomePageState extends State<HomePage> {
             discount: restaurant.discountText,
             instagram: restaurant.instagram,
             telegram: restaurant.telegram,
+            latitude: restaurant.latitude,
+            longitude: restaurant.longitude,
           ),
         ),
       ),
@@ -172,6 +186,8 @@ class _HomePageState extends State<HomePage> {
       logoUrl: r.logo,
       tags: r.tagsList,
       discount: r.discountText,
+      latitude: r.latitude,
+      longitude: r.longitude,
     );
   }
 
@@ -179,11 +195,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBackground,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showQuickFilter(context),
-        backgroundColor: kPrimary,
-        child: const Icon(Icons.filter_list, color: Colors.white),
-      ),
+
       body: SafeArea(
         child: RefreshIndicator(
           color: kPrimary,
@@ -206,8 +218,6 @@ class _HomePageState extends State<HomePage> {
                 SliverToBoxAdapter(child: _buildEmpty())
               else
                 _buildRestaurantList(context, _filteredRestaurants),
-
-              const SliverToBoxAdapter(child: SizedBox(height: 80)),
             ],
           ),
         ),
@@ -251,7 +261,7 @@ class _HomePageState extends State<HomePage> {
                     Icon(Icons.location_on, size: 16, color: kPrimary),
                     const SizedBox(width: 4),
                     Text(
-                      'Tashkent',
+                      _currentLocation ?? 'Loading...',
                       style: kBodyStyle.copyWith(
                         fontWeight: FontWeight.w500,
                         fontSize: 13,

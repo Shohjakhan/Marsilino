@@ -17,6 +17,7 @@ class Restaurant {
   final bool? bookingAvailable;
   final int? maxPeople;
   final List<String>? availableTimes;
+  final String? menuUrl;
 
   const Restaurant({
     required this.id,
@@ -28,6 +29,7 @@ class Restaurant {
     this.contactInformation,
     this.socialMedia,
     this.menu,
+    this.menuUrl,
     this.locationText,
     this.discountPercentage,
     this.galleryImages = const [],
@@ -40,13 +42,26 @@ class Restaurant {
 
   /// Parse from JSON.
   factory Restaurant.fromJson(Map<String, dynamic> json) {
-    // Parse gallery images
+    // Parse gallery images (handle both 'gallery' and 'gallery_images')
     List<String> gallery = [];
-    if (json['gallery_images'] != null) {
-      gallery = (json['gallery_images'] as List)
-          .map((img) => img['image']?.toString() ?? '')
+    final rawGallery = json['gallery'] ?? json['gallery_images'];
+    if (rawGallery != null && rawGallery is List) {
+      gallery = rawGallery
+          .map((img) {
+            if (img is Map) return img['image']?.toString() ?? '';
+            return img.toString();
+          })
           .where((url) => url.isNotEmpty)
           .toList();
+    }
+
+    // Handle menu (can be List or String URL)
+    List<dynamic>? menuList;
+    String? menuUrl;
+    if (json['menu'] is List) {
+      menuList = json['menu'] as List<dynamic>;
+    } else if (json['menu'] is String) {
+      menuUrl = json['menu'] as String;
     }
 
     return Restaurant(
@@ -57,8 +72,11 @@ class Restaurant {
       hashtags: json['hashtags'] as String?,
       workingHours: json['working_hours'] as String?,
       contactInformation: json['contact_information'] as String?,
-      socialMedia: json['social_media'] as Map<String, dynamic>?,
-      menu: json['menu'] as List<dynamic>?,
+      socialMedia: json['social_media'] is Map
+          ? json['social_media'] as Map<String, dynamic>
+          : null, // Handle if string or null
+      menu: menuList,
+      menuUrl: menuUrl,
       locationText: json['location_text'] as String?,
       discountPercentage: _parseDouble(json['discount_percentage']),
       galleryImages: gallery,

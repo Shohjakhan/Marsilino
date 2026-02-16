@@ -21,6 +21,8 @@ class RestaurantCardData {
 
   /// Discount text (e.g., "10% off"). Null if no discount.
   final String? discount;
+  final double? latitude;
+  final double? longitude;
 
   const RestaurantCardData({
     required this.name,
@@ -29,6 +31,8 @@ class RestaurantCardData {
     this.logoUrl,
     this.tags = const [],
     this.discount,
+    this.latitude,
+    this.longitude,
   });
 
   /// Convert to full RestaurantData for the landing page.
@@ -50,6 +54,8 @@ class RestaurantCardData {
       logoUrl: logoUrl,
       menuImageUrl: 'https://picsum.photos/seed/${name.hashCode}menu/600/800',
       discount: discount,
+      latitude: latitude,
+      longitude: longitude,
     );
   }
 }

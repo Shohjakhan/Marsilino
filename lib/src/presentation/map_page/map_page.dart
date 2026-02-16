@@ -1,16 +1,26 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:yandex_mapkit/yandex_mapkit.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../data/models/restaurant.dart';
 import '../../data/repositories/restaurants_repository.dart';
 import '../../theme/app_theme.dart';
 import '../restaurant_page/restaurant_page.dart';
-import 'google_map_marker_helper.dart';
+import 'map_marker_helper.dart';
 
-/// Map page with Google Maps, user location, and restaurant markers.
+/// Map page with Yandex Maps, user location, and restaurant markers.
 class MapPage extends StatefulWidget {
-  const MapPage({super.key});
+  final double? initialLat;
+  final double? initialLng;
+  final String? restaurantId;
+
+  const MapPage({
+    super.key,
+    this.initialLat,
+    this.initialLng,
+    this.restaurantId,
+  });
 
   @override
   State<MapPage> createState() => _MapPageState();
@@ -21,18 +31,19 @@ class _MapPageState extends State<MapPage> {
   final Set<String> _selectedFilters = {};
   final _restaurantsRepository = RestaurantsRepository();
 
-  GoogleMapController? _mapController;
+  YandexMapController? _mapController;
   Position? _userPosition;
   List<Restaurant> _restaurants = [];
   Restaurant? _selectedRestaurant;
   bool _isLoading = true;
   bool _locationPermissionDenied = false;
   String? _error;
+  double _currentZoom = _defaultZoom;
 
-  Set<Marker> _markers = {};
+  List<MapObject> _mapObjects = [];
 
   // Default center: Tashkent
-  static const _defaultCenter = LatLng(41.2995, 69.2401);
+  static const _defaultCenter = Point(latitude: 41.2995, longitude: 69.2401);
   static const _defaultZoom = 13.0;
 
   /// Available filter chips.
@@ -48,20 +59,23 @@ class _MapPageState extends State<MapPage> {
   @override
   void initState() {
     super.initState();
-    _initLocation();
+    if (widget.initialLat != null && widget.initialLng != null) {
+      _isLoading = true;
+      _loadNearbyRestaurants(widget.initialLat!, widget.initialLng!);
+    } else {
+      _initLocation();
+    }
   }
 
   @override
   void dispose() {
     _searchController.dispose();
-    _mapController?.dispose();
     super.dispose();
   }
 
   Future<void> _initLocation() async {
     setState(() => _isLoading = true);
 
-    // Request location permission
     final status = await Permission.location.request();
 
     if (status.isDenied || status.isPermanentlyDenied) {
@@ -69,12 +83,10 @@ class _MapPageState extends State<MapPage> {
         _locationPermissionDenied = true;
         _isLoading = false;
       });
-      // Still load restaurants for default location
       _loadNearbyRestaurants(_defaultCenter.latitude, _defaultCenter.longitude);
       return;
     }
 
-    // Get current position
     try {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
@@ -83,26 +95,50 @@ class _MapPageState extends State<MapPage> {
         ),
       );
 
+      if (RestaurantsRepository.kEnableMockData) {
+        setState(() {
+          _userPosition = position;
+        });
+
+        _mapController?.moveCamera(
+          CameraUpdate.newCameraPosition(
+            const CameraPosition(target: _defaultCenter, zoom: 13.0),
+          ),
+          animation: const MapAnimation(
+            type: MapAnimationType.smooth,
+            duration: 1.0,
+          ),
+        );
+        _loadNearbyRestaurants(41.2995, 69.2401);
+        return;
+      }
+
       setState(() {
         _userPosition = position;
       });
 
-      // Move camera to user location
-      _mapController?.animateCamera(
-        CameraUpdate.newLatLngZoom(
-          LatLng(position.latitude, position.longitude),
-          _defaultZoom,
+      _mapController?.moveCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: Point(
+              latitude: position.latitude,
+              longitude: position.longitude,
+            ),
+            zoom: _defaultZoom,
+          ),
+        ),
+        animation: const MapAnimation(
+          type: MapAnimationType.smooth,
+          duration: 1.0,
         ),
       );
 
-      // Load nearby restaurants
       _loadNearbyRestaurants(position.latitude, position.longitude);
     } catch (e) {
       setState(() {
         _error = 'Could not get location';
         _isLoading = false;
       });
-      // Fall back to default location
       _loadNearbyRestaurants(_defaultCenter.latitude, _defaultCenter.longitude);
     }
   }
@@ -121,7 +157,35 @@ class _MapPageState extends State<MapPage> {
       _isLoading = false;
       if (result.success) {
         _restaurants = result.restaurants;
+
+        // If we have an initial restaurant ID, select it
+        if (widget.restaurantId != null) {
+          _selectedRestaurant = _restaurants.firstWhere(
+            (r) => r.id == widget.restaurantId,
+            orElse: () => _restaurants.first,
+          );
+        }
+
         _buildMarkers();
+
+        // If we have initial coordinates, move camera there
+        if (widget.initialLat != null && widget.initialLng != null) {
+          _mapController?.moveCamera(
+            CameraUpdate.newCameraPosition(
+              CameraPosition(
+                target: Point(
+                  latitude: widget.initialLat!,
+                  longitude: widget.initialLng!,
+                ),
+                zoom: 15.0, // Zoom in more when focusing on a restaurant
+              ),
+            ),
+            animation: const MapAnimation(
+              type: MapAnimationType.smooth,
+              duration: 1.0,
+            ),
+          );
+        }
       } else {
         _error = result.error;
       }
@@ -129,43 +193,78 @@ class _MapPageState extends State<MapPage> {
   }
 
   Future<void> _buildMarkers() async {
-    final newMarkers = <Marker>{};
+    final newMapObjects = <MapObject>[];
 
-    // Add restaurant markers
     for (final restaurant in _restaurants) {
       if (restaurant.latitude == null || restaurant.longitude == null) continue;
 
       final isSelected = _selectedRestaurant?.id == restaurant.id;
-      final icon = await GoogleMapMarkerHelper.createMarkerIcon(
+
+      double zoomScale = 1.0;
+      if (_currentZoom > 13) {
+        // Grow faster when zooming in (aggressive scaling)
+        zoomScale = 1.0 + (_currentZoom - 13) * 0.8;
+      } else if (_currentZoom < 13) {
+        // Shrink faster when zooming out
+        zoomScale = 1.0 - (13 - _currentZoom) * 0.25;
+      }
+      zoomScale = zoomScale.clamp(0.4, 4.0);
+
+      final icon = await MapMarkerHelper.createMarkerIcon(
         logoUrl: restaurant.logo,
         isSelected: isSelected,
       );
 
-      newMarkers.add(
-        Marker(
-          markerId: MarkerId('restaurant_${restaurant.id}'),
-          position: LatLng(restaurant.latitude!, restaurant.longitude!),
-          icon: icon,
-          onTap: () => _onMarkerTap(restaurant),
+      newMapObjects.add(
+        PlacemarkMapObject(
+          mapId: MapObjectId('restaurant_${restaurant.id}'),
+          point: Point(
+            latitude: restaurant.latitude!,
+            longitude: restaurant.longitude!,
+          ),
+          icon: PlacemarkIcon.single(
+            PlacemarkIconStyle(
+              image: icon,
+              scale: zoomScale,
+              anchor: const Offset(0.5, 1.0), // Pin tip at bottom center
+            ),
+          ),
+          text: PlacemarkText(
+            text: restaurant.name,
+            style: PlacemarkTextStyle(
+              size: (8 + (_currentZoom - 13) * 0.5).clamp(8.0, 14.0),
+              placement: TextStylePlacement.bottom,
+              offset: 2,
+            ),
+          ),
+          opacity: 1,
+          onTap: (MapObject mapObject, Point point) {
+            _onMarkerTap(restaurant);
+          },
         ),
       );
     }
 
-    // Add user location marker
     if (_userPosition != null) {
-      final userIcon = await GoogleMapMarkerHelper.createUserLocationMarker();
-      newMarkers.add(
-        Marker(
-          markerId: const MarkerId('user_location'),
-          position: LatLng(_userPosition!.latitude, _userPosition!.longitude),
-          icon: userIcon,
+      final userIcon = await MapMarkerHelper.createUserLocationMarker();
+      newMapObjects.add(
+        PlacemarkMapObject(
+          mapId: const MapObjectId('user_location'),
+          point: Point(
+            latitude: _userPosition!.latitude,
+            longitude: _userPosition!.longitude,
+          ),
+          icon: PlacemarkIcon.single(
+            PlacemarkIconStyle(image: userIcon, scale: 1),
+          ),
+          opacity: 1,
         ),
       );
     }
 
     if (mounted) {
       setState(() {
-        _markers = newMarkers;
+        _mapObjects = newMapObjects;
       });
     }
   }
@@ -182,11 +281,13 @@ class _MapPageState extends State<MapPage> {
 
   void _onMarkerTap(Restaurant restaurant) {
     setState(() {
-      _selectedRestaurant = _selectedRestaurant?.id == restaurant.id
-          ? null
-          : restaurant;
+      if (_selectedRestaurant?.id == restaurant.id) {
+        _selectedRestaurant = null;
+      } else {
+        _selectedRestaurant = restaurant;
+      }
     });
-    _buildMarkers(); // Rebuild markers to update selected state
+    _buildMarkers();
   }
 
   void _navigateToRestaurant(Restaurant restaurant) {
@@ -225,19 +326,24 @@ class _MapPageState extends State<MapPage> {
           ),
           backgroundColor: kPrimary,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.all(16),
         ),
       );
       return;
     }
 
-    _mapController?.animateCamera(
-      CameraUpdate.newLatLngZoom(
-        LatLng(_userPosition!.latitude, _userPosition!.longitude),
-        _defaultZoom,
+    _mapController?.moveCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: Point(
+            latitude: _userPosition!.latitude,
+            longitude: _userPosition!.longitude,
+          ),
+          zoom: _defaultZoom,
+        ),
+      ),
+      animation: const MapAnimation(
+        type: MapAnimationType.smooth,
+        duration: 1.0,
       ),
     );
   }
@@ -249,11 +355,8 @@ class _MapPageState extends State<MapPage> {
       body: SafeArea(
         child: Stack(
           children: [
-            // Map
             _buildMap(),
-            // Top overlay: Search + Filters
             Positioned(top: 0, left: 0, right: 0, child: _buildTopOverlay()),
-            // Error message
             if (_error != null && !_isLoading)
               Positioned(
                 bottom: 100,
@@ -265,7 +368,7 @@ class _MapPageState extends State<MapPage> {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.9),
+                    color: Colors.red.withOpacity(0.9),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -275,7 +378,6 @@ class _MapPageState extends State<MapPage> {
                   ),
                 ),
               ),
-            // Loading indicator
             if (_isLoading)
               Positioned(
                 bottom: 100,
@@ -313,7 +415,6 @@ class _MapPageState extends State<MapPage> {
                   ),
                 ),
               ),
-            // Bottom card when marker selected
             if (_selectedRestaurant != null) _buildBottomCard(),
           ],
         ),
@@ -322,24 +423,36 @@ class _MapPageState extends State<MapPage> {
   }
 
   Widget _buildMap() {
-    return GoogleMap(
-      onMapCreated: (controller) {
+    return YandexMap(
+      onMapCreated: (controller) async {
         _mapController = controller;
+        if (_userPosition != null) {
+          await controller.moveCamera(
+            CameraUpdate.newCameraPosition(
+              CameraPosition(
+                target: Point(
+                  latitude: _userPosition!.latitude,
+                  longitude: _userPosition!.longitude,
+                ),
+                zoom: _defaultZoom,
+              ),
+            ),
+          );
+        }
       },
-      initialCameraPosition: CameraPosition(
-        target: _userPosition != null
-            ? LatLng(_userPosition!.latitude, _userPosition!.longitude)
-            : _defaultCenter,
-        zoom: _defaultZoom,
-      ),
-      markers: _markers,
-      myLocationEnabled: false, // We use custom user location marker
-      myLocationButtonEnabled: false,
-      zoomControlsEnabled: false,
-      onTap: (_) {
-        setState(() => _selectedRestaurant = null);
-        _buildMarkers();
+      onCameraPositionChanged: (cameraPosition, reason, finished) {
+        if (_currentZoom != cameraPosition.zoom) {
+          setState(() {
+            _currentZoom = cameraPosition.zoom;
+          });
+          // Update markers instantly via scale property if Move has finished
+          // Actually, just calling _buildMarkers is needed when restaurants change
+          // or selection changes. For zoom, the engine handles 'scale: zoomScale'
+          // BUT we need to rebuild the mapObjects list with the new scale.
+          _buildMarkers();
+        }
       },
+      mapObjects: _mapObjects,
     );
   }
 
@@ -351,8 +464,8 @@ class _MapPageState extends State<MapPage> {
           end: Alignment.bottomCenter,
           colors: [
             kBackground,
-            kBackground.withValues(alpha: 0.95),
-            kBackground.withValues(alpha: 0),
+            kBackground.withOpacity(0.95),
+            kBackground.withOpacity(0),
           ],
           stops: const [0, 0.7, 1],
         ),
@@ -361,10 +474,8 @@ class _MapPageState extends State<MapPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Search bar
           _buildSearchBar(),
           const SizedBox(height: 12),
-          // Filter chips
           _buildFilterChips(),
         ],
       ),
@@ -384,10 +495,7 @@ class _MapPageState extends State<MapPage> {
         decoration: InputDecoration(
           hintText: 'Search restaurants nearby',
           hintStyle: kBodyStyle.copyWith(fontSize: 15, color: kTextSecondary),
-          prefixIcon: Icon(
-            Icons.search,
-            color: kTextSecondary.withValues(alpha: 0.7),
-          ),
+          prefixIcon: const Icon(Icons.search, color: kTextSecondary),
           suffixIcon: IconButton(
             icon: const Icon(Icons.my_location, color: kPrimary),
             onPressed: _centerOnUser,
@@ -435,7 +543,6 @@ class _MapPageState extends State<MapPage> {
                 child: Text(
                   filter,
                   style: TextStyle(
-                    fontFamily: '.SF Pro Text',
                     fontSize: 13,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                     color: isSelected ? Colors.white : kTextPrimary,
@@ -451,7 +558,6 @@ class _MapPageState extends State<MapPage> {
 
   Widget _buildBottomCard() {
     final restaurant = _selectedRestaurant!;
-
     return Positioned(
       left: 16,
       right: 16,
@@ -465,7 +571,7 @@ class _MapPageState extends State<MapPage> {
             borderRadius: BorderRadius.circular(kCardRadius),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
+                color: Colors.black.withOpacity(0.15),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -473,119 +579,75 @@ class _MapPageState extends State<MapPage> {
           ),
           child: Row(
             children: [
-              // Logo
               Container(
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: kBackground,
-                  border: Border.all(
-                    color: kTextSecondary.withValues(alpha: 0.2),
-                  ),
+                  border: Border.all(color: kTextSecondary.withOpacity(0.2)),
                 ),
                 child: ClipOval(
                   child: restaurant.logo != null
-                      ? Image.network(
-                          restaurant.logo!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(
-                            Icons.restaurant,
-                            color: kTextSecondary,
-                          ),
-                        )
+                      ? Image.network(restaurant.logo!, fit: BoxFit.cover)
                       : const Icon(Icons.restaurant, color: kTextSecondary),
                 ),
               ),
               const SizedBox(width: 14),
-              // Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Name row
+                    Text(
+                      restaurant.name,
+                      style: kSubtitleStyle.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
                         Expanded(
                           child: Text(
-                            restaurant.name,
-                            style: kSubtitleStyle.copyWith(
-                              fontWeight: FontWeight.bold,
+                            restaurant.locationText ?? '',
+                            style: kBodyStyle.copyWith(
+                              color: kTextSecondary,
+                              fontSize: 13,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (restaurant.discountText != null)
+                        if (restaurant.discountText != null) ...[
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
-                              vertical: 3,
+                              vertical: 4,
                             ),
                             decoration: BoxDecoration(
                               color: kSecondaryLight,
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               restaurant.discountText!,
                               style: const TextStyle(
-                                fontFamily: '.SF Pro Text',
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
                             ),
                           ),
+                        ],
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    // Address
-                    Text(
-                      restaurant.locationText ?? '',
-                      style: kBodyStyle.copyWith(
-                        color: kTextSecondary,
-                        fontSize: 13,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 6),
-                    // Tags
-                    if (restaurant.tagsList.isNotEmpty)
-                      Wrap(
-                        spacing: 6,
-                        children: restaurant.tagsList.take(3).map((tag) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: kSecondaryLight.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              '#$tag',
-                              style: const TextStyle(
-                                fontFamily: '.SF Pro Text',
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: kSecondaryLight,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              // Arrow
-              Icon(
-                Icons.chevron_right,
-                color: kTextSecondary.withValues(alpha: 0.5),
-              ),
+              const Icon(Icons.chevron_right, color: kTextSecondary),
             ],
           ),
         ),

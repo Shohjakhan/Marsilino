@@ -41,6 +41,12 @@ class InputField extends StatelessWidget {
   /// Text controller for the input.
   final TextEditingController? controller;
 
+  /// Whether the input is read-only.
+  final bool readOnly;
+
+  /// Callback when tapped (useful when readOnly is true).
+  final VoidCallback? onTap;
+
   /// Input field mode (text, numeric, otp).
   final InputFieldMode mode;
 
@@ -91,6 +97,8 @@ class InputField extends StatelessWidget {
     this.borderRadius = 14.0,
     this.maxLines = 1,
     this.textInputAction,
+    this.readOnly = false,
+    this.onTap,
   });
 
   @override
@@ -128,6 +136,8 @@ class InputField extends StatelessWidget {
           inputFormatters: _getInputFormatters(),
           onChanged: onChanged,
           onEditingComplete: onEditingComplete,
+          readOnly: readOnly,
+          onTap: onTap,
           style: kBodyStyle.copyWith(fontSize: 16, color: kTextPrimary),
           decoration: InputDecoration(
             hintText: placeholder,

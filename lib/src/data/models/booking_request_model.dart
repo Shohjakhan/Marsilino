@@ -3,23 +3,26 @@ import '../../utils/validation/booking_validator.dart';
 
 /// Request model for creating a booking.
 class BookingRequest {
-  final String restaurantId;
-  final int people;
+  final String restaurant;
+  final String customerPhoneNumber;
+  final int numberOfPeople;
   final String date; // ISO format: "YYYY-MM-DD"
   final String time; // 24-hour format: "HH:MM"
-  final String? comments;
+  final String? comment;
 
   const BookingRequest({
-    required this.restaurantId,
-    required this.people,
+    required this.restaurant,
+    required this.customerPhoneNumber,
+    required this.numberOfPeople,
     required this.date,
     required this.time,
-    this.comments,
+    this.comment,
   });
 
   /// Create from BookingData validation model.
   factory BookingRequest.fromBookingData({
     required String restaurantId,
+    required String phoneNumber,
     required BookingData bookingData,
   }) {
     // Format date to ISO format
@@ -33,27 +36,29 @@ class BookingRequest {
         : '';
 
     return BookingRequest(
-      restaurantId: restaurantId,
-      people: bookingData.people,
+      restaurant: restaurantId,
+      customerPhoneNumber: phoneNumber,
+      numberOfPeople: bookingData.people,
       date: dateStr,
       time: timeStr,
-      comments: bookingData.comments,
+      comment: bookingData.comments,
     );
   }
 
   /// Convert to JSON for API request.
   Map<String, dynamic> toJson() {
     return {
-      'restaurant_id': restaurantId,
-      'people': people,
+      'restaurant': restaurant,
+      'customer_phone_number': customerPhoneNumber,
+      'number_of_people': numberOfPeople,
       'date': date,
       'time': time,
-      if (comments != null && comments!.isNotEmpty) 'comments': comments,
+      if (comment != null && comment!.isNotEmpty) 'comment': comment,
     };
   }
 
   @override
   String toString() {
-    return 'BookingRequest(restaurantId: $restaurantId, people: $people, date: $date, time: $time, comments: $comments)';
+    return 'BookingRequest(restaurant: $restaurant, customerPhoneNumber: $customerPhoneNumber, numberOfPeople: $numberOfPeople, date: $date, time: $time, comment: $comment)';
   }
 }

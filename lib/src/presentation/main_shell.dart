@@ -1,3 +1,4 @@
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:restaurant/l10n/gen/app_localizations.dart';
 import '../theme/app_theme.dart';
@@ -6,6 +7,7 @@ import 'home/home_page.dart';
 import 'liked_page/liked_page.dart';
 import 'map_page/map_page.dart';
 import 'profile_page/profile_page.dart';
+import 'common/navigation_notifications.dart';
 
 /// Main app shell with bottom tab navigation.
 /// Contains 4 tabs: Home, Map, Likes, Profile.
@@ -20,11 +22,13 @@ class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
   /// Pages for each tab.
-  final List<Widget> _pages = const [
-    HomePage(),
-    MapPage(),
-    LikedPage(),
-    ProfilePage(),
+  Widget _mapPage = const MapPage();
+
+  List<Widget> get _pages => [
+    const HomePage(),
+    _mapPage,
+    const LikedPage(),
+    const ProfilePage(),
   ];
 
   void _onTabTapped(int index) {
@@ -59,13 +63,40 @@ class _MainShellState extends State<MainShell> {
       ),
     ];
 
-    return Scaffold(
-      backgroundColor: kBackground,
-      body: IndexedStack(index: _currentIndex, children: _pages),
-      bottomNavigationBar: BottomNav(
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
-        items: navItems,
+    return NotificationListener<NavigateToMapNotification>(
+      onNotification: (notification) {
+        setState(() {
+          _currentIndex = 1; // Map tab
+          _mapPage = MapPage(
+            initialLat: notification.latitude,
+            initialLng: notification.longitude,
+            restaurantId: notification.restaurantId,
+            key: UniqueKey(), // Force rebuild to trigger jump
+          );
+        });
+        return true;
+      },
+      child: Scaffold(
+        backgroundColor: kBackground,
+        body: PageTransitionSwitcher(
+          duration: const Duration(milliseconds: 300),
+          transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
+            return FadeThroughTransition(
+              animation: primaryAnimation,
+              secondaryAnimation: secondaryAnimation,
+              child: child,
+            );
+          },
+          child: KeyedSubtree(
+            key: ValueKey<int>(_currentIndex),
+            child: _pages[_currentIndex],
+          ),
+        ),
+        bottomNavigationBar: BottomNav(
+          currentIndex: _currentIndex,
+          onTap: _onTabTapped,
+          items: navItems,
+        ),
       ),
     );
   }

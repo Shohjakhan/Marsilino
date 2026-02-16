@@ -38,9 +38,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
       'icon': 'flash',
     },
     {
-      'title': 'Welcome to Restaurant App',
+      'title': 'Tap. Sit. Savor.',
       'description': 'Create an account or sign in to continue.',
-      'icon': 'person',
+      'icon': 'logo',
     },
   ];
 
@@ -191,6 +191,18 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Widget _buildIcon(String iconType) {
+    if (iconType == 'logo') {
+      return Container(
+        width: 280,
+        height: 280,
+        alignment: Alignment.center,
+        child: Image.asset(
+          'assets/images/Marsilino_Logo-removebg-preview.png',
+          fit: BoxFit.contain,
+        ),
+      );
+    }
+
     IconData icon;
     switch (iconType) {
       case 'map':

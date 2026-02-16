@@ -22,7 +22,10 @@ class BookingsRepository {
   /// Create a new booking.
   Future<BookingResult> createBooking(BookingRequest request) async {
     try {
-      final response = await _client.post('/bookings/', data: request.toJson());
+      final response = await _client.post(
+        '/restaurants/book-table/',
+        data: request.toJson(),
+      );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final booking = BookingResponse.fromJson(
@@ -104,4 +107,47 @@ class BookingsRepository {
         return extractedError ?? 'Failed to create booking ($statusCode)';
     }
   }
+
+  /// Get user's bookings.
+  Future<BookingsListResult> getUserBookings() async {
+    try {
+      final response = await _client.get('/me/bookings/');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data as List<dynamic>;
+        final bookings = data
+            .map(
+              (json) => BookingResponse.fromJson(json as Map<String, dynamic>),
+            )
+            .toList();
+        return BookingsListResult(success: true, bookings: bookings);
+      }
+
+      return BookingsListResult(
+        success: false,
+        error: 'Failed to fetch bookings (${response.statusCode})',
+      );
+    } on DioException catch (e) {
+      final result = _handleDioError(e);
+      return BookingsListResult(success: false, error: result.error);
+    } catch (e) {
+      return BookingsListResult(
+        success: false,
+        error: 'An unexpected error occurred: $e',
+      );
+    }
+  }
+}
+
+/// Result for fetching bookings.
+class BookingsListResult {
+  final bool success;
+  final List<BookingResponse> bookings;
+  final String? error;
+
+  const BookingsListResult({
+    required this.success,
+    this.bookings = const [],
+    this.error,
+  });
 }

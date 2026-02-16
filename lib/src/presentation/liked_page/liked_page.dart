@@ -95,7 +95,10 @@ class _LikedPageState extends State<LikedPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => RestaurantPage(restaurantId: restaurant.id),
+        builder: (context) => RestaurantPage(
+          restaurantId: restaurant.id,
+          initialData: RestaurantData.fromApiModel(restaurant),
+        ),
       ),
     );
   }
