@@ -333,6 +333,294 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Try Again'**
   String get tryAgain;
+
+  /// No description provided for @signIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign In'**
+  String get signIn;
+
+  /// No description provided for @enterPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your phone number'**
+  String get enterPhone;
+
+  /// No description provided for @phoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Number'**
+  String get phoneNumber;
+
+  /// No description provided for @continueText.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continueText;
+
+  /// No description provided for @termsAgree.
+  ///
+  /// In en, this message translates to:
+  /// **'By continuing, you agree to our'**
+  String get termsAgree;
+
+  /// No description provided for @termsOfService.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service'**
+  String get termsOfService;
+
+  /// No description provided for @privacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
+
+  /// No description provided for @verification.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification'**
+  String get verification;
+
+  /// No description provided for @otpEnterCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Code'**
+  String get otpEnterCode;
+
+  /// No description provided for @sentCodeTo.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a 6-digit code to'**
+  String get sentCodeTo;
+
+  /// No description provided for @verifying.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying...'**
+  String get verifying;
+
+  /// No description provided for @waitingTelegram.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for Telegram message...'**
+  String get waitingTelegram;
+
+  /// No description provided for @resendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code'**
+  String get resendCode;
+
+  /// No description provided for @resendCodeIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code in'**
+  String get resendCodeIn;
+
+  /// No description provided for @verify.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get verify;
+
+  /// No description provided for @enterAllDigits.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter all 6 digits'**
+  String get enterAllDigits;
+
+  /// No description provided for @completeProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete Profile'**
+  String get completeProfile;
+
+  /// No description provided for @enterDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your details to continue'**
+  String get enterDetails;
+
+  /// No description provided for @fullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Name'**
+  String get fullName;
+
+  /// No description provided for @nameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. John Doe'**
+  String get nameHint;
+
+  /// No description provided for @enterNameError.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your name'**
+  String get enterNameError;
+
+  /// No description provided for @saveContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Save & Continue'**
+  String get saveContinue;
+
+  /// No description provided for @findFood.
+  ///
+  /// In en, this message translates to:
+  /// **'Find Your Favorite Food'**
+  String get findFood;
+
+  /// No description provided for @searchPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search restaurants, food...'**
+  String get searchPlaceholder;
+
+  /// No description provided for @all.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get all;
+
+  /// No description provided for @welcomeBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome Back'**
+  String get welcomeBack;
+
+  /// No description provided for @sendCodeTelegram.
+  ///
+  /// In en, this message translates to:
+  /// **'Send code via Telegram'**
+  String get sendCodeTelegram;
+
+  /// No description provided for @codeSentSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Code sent successfully'**
+  String get codeSentSuccess;
+
+  /// No description provided for @phoneError.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your phone number'**
+  String get phoneError;
+
+  /// No description provided for @phoneInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid phone number'**
+  String get phoneInvalid;
+
+  /// No description provided for @nameLengthError.
+  ///
+  /// In en, this message translates to:
+  /// **'Name must be at least 2 characters'**
+  String get nameLengthError;
+
+  /// No description provided for @welcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome'**
+  String get welcome;
+
+  /// No description provided for @getStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Started'**
+  String get getStarted;
+
+  /// No description provided for @discover.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover'**
+  String get discover;
+
+  /// No description provided for @quickFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Filters'**
+  String get quickFilters;
+
+  /// No description provided for @selectCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Select categories to filter restaurants'**
+  String get selectCategories;
+
+  /// No description provided for @clearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All'**
+  String get clearAll;
+
+  /// No description provided for @apply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get apply;
+
+  /// No description provided for @nearbyRestaurants.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby Restaurants'**
+  String get nearbyRestaurants;
+
+  /// No description provided for @placesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} places'**
+  String placesCount(Object count);
+
+  /// No description provided for @loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get loading;
+
+  /// No description provided for @noRestaurantsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No restaurants found'**
+  String get noRestaurantsFound;
+
+  /// No description provided for @adjustFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Try adjusting your search or filters'**
+  String get adjustFilters;
+
+  /// No description provided for @searchNearby.
+  ///
+  /// In en, this message translates to:
+  /// **'Search restaurants nearby'**
+  String get searchNearby;
+
+  /// No description provided for @loadingRestaurants.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading restaurants...'**
+  String get loadingRestaurants;
+
+  /// No description provided for @couldNotGetLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not get location'**
+  String get couldNotGetLocation;
+
+  /// No description provided for @locationPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission denied. Enable in settings.'**
+  String get locationPermissionDenied;
+
+  /// No description provided for @gettingLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting location...'**
+  String get gettingLocation;
 }
 
 class _AppLocalizationsDelegate

@@ -124,4 +124,151 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get tryAgain => 'Попробовать снова';
+
+  @override
+  String get signIn => 'Войти';
+
+  @override
+  String get enterPhone => 'Введите номер телефона';
+
+  @override
+  String get phoneNumber => 'Номер телефона';
+
+  @override
+  String get continueText => 'Продолжить';
+
+  @override
+  String get termsAgree => 'Продолжая, вы соглашаетесь с';
+
+  @override
+  String get termsOfService => 'Условиями';
+
+  @override
+  String get privacyPolicy => 'Политикой';
+
+  @override
+  String get verification => 'Верификация';
+
+  @override
+  String get otpEnterCode => 'Введите код';
+
+  @override
+  String get sentCodeTo => 'Мы отправили 6-значный код на';
+
+  @override
+  String get verifying => 'Проверка...';
+
+  @override
+  String get waitingTelegram => 'Ожидание сообщения в Telegram...';
+
+  @override
+  String get resendCode => 'Отправить код снова';
+
+  @override
+  String get resendCodeIn => 'Отправить код через';
+
+  @override
+  String get verify => 'Подтвердить';
+
+  @override
+  String get enterAllDigits => 'Введите все 6 цифр';
+
+  @override
+  String get completeProfile => 'Заполните профиль';
+
+  @override
+  String get enterDetails => 'Введите данные для продолжения';
+
+  @override
+  String get fullName => 'ФИО';
+
+  @override
+  String get nameHint => 'напр. Иван Иванов';
+
+  @override
+  String get enterNameError => 'Пожалуйста, введите имя';
+
+  @override
+  String get saveContinue => 'Сохранить и продолжить';
+
+  @override
+  String get findFood => 'Найдите любимую еду';
+
+  @override
+  String get searchPlaceholder => 'Поиск ресторанов, еды...';
+
+  @override
+  String get all => 'Все';
+
+  @override
+  String get welcomeBack => 'Добро пожаловать';
+
+  @override
+  String get sendCodeTelegram => 'Отправить код в Telegram';
+
+  @override
+  String get codeSentSuccess => 'Код успешно отправлен';
+
+  @override
+  String get phoneError => 'Пожалуйста, введите номер телефона';
+
+  @override
+  String get phoneInvalid => 'Пожалуйста, введите корректный номер';
+
+  @override
+  String get nameLengthError => 'Имя должно быть не менее 2 символов';
+
+  @override
+  String get welcome => 'Добро пожаловать';
+
+  @override
+  String get getStarted => 'Начать';
+
+  @override
+  String get discover => 'Обзор';
+
+  @override
+  String get quickFilters => 'Быстрые фильтры';
+
+  @override
+  String get selectCategories => 'Выберите категории';
+
+  @override
+  String get clearAll => 'Очистить';
+
+  @override
+  String get apply => 'Применить';
+
+  @override
+  String get nearbyRestaurants => 'Рестораны рядом';
+
+  @override
+  String placesCount(Object count) {
+    return '$count мест';
+  }
+
+  @override
+  String get loading => 'Загрузка...';
+
+  @override
+  String get noRestaurantsFound => 'Рестораны не найдены';
+
+  @override
+  String get adjustFilters => 'Измените настройки поиска';
+
+  @override
+  String get searchNearby => 'Поиск ресторанов рядом';
+
+  @override
+  String get loadingRestaurants => 'Загрузка ресторанов...';
+
+  @override
+  String get couldNotGetLocation => 'Не удалось получить местоположение';
+
+  @override
+  String get locationPermissionDenied =>
+      'Доступ к геолокации запрещен. Включите в настройках.';
+
+  @override
+  String get gettingLocation => 'Получение местоположения...';
 }

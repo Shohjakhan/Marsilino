@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:restaurant/l10n/gen/app_localizations.dart';
 import '../../logic/restaurants_cubit.dart';
 import 'package:yandex_mapkit/yandex_mapkit.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -134,8 +135,10 @@ class _MapPageState extends State<MapPage> {
 
       _loadNearbyRestaurants(position.latitude, position.longitude);
     } catch (e) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       setState(() {
-        _error = 'Could not get location';
+        _error = l10n.couldNotGetLocation;
         _isLoading = false;
       });
       _loadNearbyRestaurants(_defaultCenter.latitude, _defaultCenter.longitude);
@@ -265,13 +268,14 @@ class _MapPageState extends State<MapPage> {
   }
 
   void _centerOnUser() {
+    final l10n = AppLocalizations.of(context)!;
     if (_userPosition == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             _locationPermissionDenied
-                ? 'Location permission denied. Enable in settings.'
-                : 'Getting location...',
+                ? l10n.locationPermissionDenied
+                : l10n.gettingLocation,
           ),
           backgroundColor: kPrimary,
           behavior: SnackBarBehavior.floating,
@@ -299,6 +303,7 @@ class _MapPageState extends State<MapPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: kBackground,
       body: SafeArea(
@@ -321,15 +326,6 @@ class _MapPageState extends State<MapPage> {
               }
 
               _buildMarkers();
-
-              // Camera move logic for initial load could be here or keep it in _initLocation?
-              // The original code did it in _loadNearbyRestaurants callback.
-              // Since we don't have that callback directly, we might need a flag or check if it's the *first* load.
-              // But _initLocation calls _loadNearbyRestaurants which triggers this.
-              // We can leave camera logic to _initLocation/User interaction for now, preventing jumps.
-              // EXCEPT for the initial widget.initialLat/Lng!
-              // That was in _loadNearbyRestaurants.
-              // We can put it here with a check.
             } else if (state is RestaurantsError) {
               setState(() {
                 _error = state.message;
@@ -366,7 +362,7 @@ class _MapPageState extends State<MapPage> {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.9),
+                        color: Colors.red.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -407,7 +403,7 @@ class _MapPageState extends State<MapPage> {
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              'Loading restaurants...',
+                              l10n.loadingRestaurants,
                               style: kBodyStyle.copyWith(fontSize: 13),
                             ),
                           ],
@@ -466,8 +462,8 @@ class _MapPageState extends State<MapPage> {
           end: Alignment.bottomCenter,
           colors: [
             kBackground,
-            kBackground.withOpacity(0.95),
-            kBackground.withOpacity(0),
+            kBackground.withValues(alpha: 0.95),
+            kBackground.withValues(alpha: 0),
           ],
           stops: const [0, 0.7, 1],
         ),
@@ -485,6 +481,7 @@ class _MapPageState extends State<MapPage> {
   }
 
   Widget _buildSearchBar() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
         color: kCardBg,
@@ -495,7 +492,7 @@ class _MapPageState extends State<MapPage> {
         controller: _searchController,
         style: kBodyStyle.copyWith(fontSize: 15),
         decoration: InputDecoration(
-          hintText: 'Search restaurants nearby',
+          hintText: l10n.searchNearby,
           hintStyle: kBodyStyle.copyWith(fontSize: 15, color: kTextSecondary),
           prefixIcon: const Icon(Icons.search, color: kTextSecondary),
           suffixIcon: IconButton(
@@ -573,7 +570,7 @@ class _MapPageState extends State<MapPage> {
             borderRadius: BorderRadius.circular(kCardRadius),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withValues(alpha: 0.15),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -587,7 +584,9 @@ class _MapPageState extends State<MapPage> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: kBackground,
-                  border: Border.all(color: kTextSecondary.withOpacity(0.2)),
+                  border: Border.all(
+                    color: kTextSecondary.withValues(alpha: 0.2),
+                  ),
                 ),
                 child: ClipOval(
                   child: restaurant.logo != null

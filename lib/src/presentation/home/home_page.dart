@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:restaurant/l10n/gen/app_localizations.dart';
 import '../../data/models/restaurant.dart';
 import '../../logic/restaurants_cubit.dart';
 import '../../theme/app_theme.dart';
@@ -138,6 +139,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: kBackground,
       body: SafeArea(
@@ -180,9 +183,10 @@ class _HomePageState extends State<HomePage> {
                   SliverToBoxAdapter(
                     child: _buildHeader(
                       context,
-                      locationName ?? 'Loading...',
+                      locationName ?? l10n.loading,
                       activeFilters,
                       options,
+                      l10n,
                     ),
                   ),
                   SliverToBoxAdapter(
@@ -194,14 +198,15 @@ class _HomePageState extends State<HomePage> {
                       isLoading &&
                           filteredRestaurants
                               .isEmpty, // Only show dots if no data
+                      l10n,
                     ),
                   ),
                   if (isLoading && filteredRestaurants.isEmpty)
                     const SliverToBoxAdapter(child: _LoadingIndicator())
                   else if (error != null && filteredRestaurants.isEmpty)
-                    SliverToBoxAdapter(child: _buildError(context, error))
+                    SliverToBoxAdapter(child: _buildError(context, error, l10n))
                   else if (filteredRestaurants.isEmpty && !isLoading)
-                    SliverToBoxAdapter(child: _buildEmpty())
+                    SliverToBoxAdapter(child: _buildEmpty(l10n))
                   else
                     _buildRestaurantList(context, filteredRestaurants),
                 ],
@@ -218,6 +223,7 @@ class _HomePageState extends State<HomePage> {
     String location,
     Set<String> activeFilters,
     List<String> options,
+    AppLocalizations l10n,
   ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
@@ -230,10 +236,13 @@ class _HomePageState extends State<HomePage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Discover', style: kTitleStyle.copyWith(fontSize: 28)),
+                  Text(
+                    l10n.discover,
+                    style: kTitleStyle.copyWith(fontSize: 28),
+                  ),
                   const SizedBox(height: 4),
                   Text(
-                    'Find your favorite restaurants',
+                    l10n.findFood,
                     style: kBodyStyle.copyWith(color: kTextSecondary),
                   ),
                 ],
@@ -266,7 +275,7 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
           const SizedBox(height: 20),
-          _buildSearchInput(context, activeFilters, options),
+          _buildSearchInput(context, activeFilters, options, l10n),
         ],
       ),
     );
@@ -276,6 +285,7 @@ class _HomePageState extends State<HomePage> {
     BuildContext context,
     Set<String> activeFilters,
     List<String> options,
+    AppLocalizations l10n,
   ) {
     return Container(
       decoration: BoxDecoration(
@@ -288,7 +298,7 @@ class _HomePageState extends State<HomePage> {
         style: kBodyStyle.copyWith(fontSize: 15),
         onChanged: _onSearchChanged,
         decoration: InputDecoration(
-          hintText: 'Search restaurants, cuisine, location',
+          hintText: l10n.searchPlaceholder,
           hintStyle: kBodyStyle.copyWith(fontSize: 15, color: kTextSecondary),
           prefixIcon: Icon(
             Icons.search,
@@ -373,18 +383,18 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildSectionTitle(int count, bool isLoading) {
+  Widget _buildSectionTitle(int count, bool isLoading, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Nearby Restaurants',
+            l10n.nearbyRestaurants,
             style: kSubtitleStyle.copyWith(fontWeight: FontWeight.bold),
           ),
           Text(
-            isLoading ? '...' : '$count places',
+            isLoading ? '...' : l10n.placesCount(count),
             style: kBodyStyle.copyWith(color: kTextSecondary),
           ),
         ],
@@ -413,7 +423,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildError(BuildContext context, String message) {
+  Widget _buildError(
+    BuildContext context,
+    String message,
+    AppLocalizations l10n,
+  ) {
     return Padding(
       padding: const EdgeInsets.all(40),
       child: Column(
@@ -434,7 +448,7 @@ class _HomePageState extends State<HomePage> {
           OutlinedButton.icon(
             onPressed: () => context.read<RestaurantsCubit>().loadRestaurants(),
             icon: const Icon(Icons.refresh),
-            label: const Text('Try Again'),
+            label: Text(l10n.tryAgain),
             style: OutlinedButton.styleFrom(
               foregroundColor: kPrimary,
               side: const BorderSide(color: kPrimary),
@@ -445,7 +459,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildEmpty() {
+  Widget _buildEmpty(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.all(40),
       child: Column(
@@ -457,10 +471,10 @@ class _HomePageState extends State<HomePage> {
             color: kTextSecondary.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
-          Text('No restaurants found', style: kSubtitleStyle),
+          Text(l10n.noRestaurantsFound, style: kSubtitleStyle),
           const SizedBox(height: 8),
           Text(
-            'Try adjusting your search or filters',
+            l10n.adjustFilters,
             style: kBodyStyle.copyWith(color: kTextSecondary),
             textAlign: TextAlign.center,
           ),
@@ -507,14 +521,6 @@ class QuickFilterSheet extends StatefulWidget {
 }
 
 class _QuickFilterSheetState extends State<QuickFilterSheet> {
-  // We need local state if we want to defer updates, but for now we rely on parent rebuilding
-  // Actually, if parent rebuilds, this widget might not rebuild if we don't handle it
-  // But since we are passing callbacks, it's easier if we just call them directly.
-  // However, for the sheet to update visually while open, it needs to be stateful
-  // OR the parent needs to rebuild and pass new selectedFilters.
-  // Since showModalBottomSheet pushes a new route, parent rebuild doesn't update sheet contents automatically unless using StatefulBuilder or similar.
-  // Let's implement local state for the sheet and sync on apply.
-
   late Set<String> _localSelected;
 
   @override
@@ -525,6 +531,8 @@ class _QuickFilterSheetState extends State<QuickFilterSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -542,10 +550,10 @@ class _QuickFilterSheetState extends State<QuickFilterSheet> {
             ),
           ),
           const SizedBox(height: 20),
-          Text('Quick Filters', style: kTitleStyle),
+          Text(l10n.quickFilters, style: kTitleStyle),
           const SizedBox(height: 8),
           Text(
-            'Select categories to filter restaurants',
+            l10n.selectCategories,
             style: kBodyStyle.copyWith(color: kTextSecondary),
           ),
           const SizedBox(height: 20),
@@ -619,7 +627,7 @@ class _QuickFilterSheetState extends State<QuickFilterSheet> {
                       borderRadius: BorderRadius.circular(kButtonRadius),
                     ),
                   ),
-                  child: const Text('Clear All'),
+                  child: Text(l10n.clearAll),
                 ),
               ),
               const SizedBox(width: 16),
@@ -634,7 +642,7 @@ class _QuickFilterSheetState extends State<QuickFilterSheet> {
                       borderRadius: BorderRadius.circular(kButtonRadius),
                     ),
                   ),
-                  child: const Text('Apply'),
+                  child: Text(l10n.apply),
                 ),
               ),
             ],

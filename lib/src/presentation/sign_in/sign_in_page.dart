@@ -133,23 +133,7 @@ class _SignInPageState extends State<SignInPage> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              l10n.sentCodeTo, // Reusing sentCodeTo or close enough?
-                              // Actually sentCodeTo is "We sent a 6-digit code to".
-                              // Here it says "We'll send...".
-                              // I'll stick to 'sentCodeTo' context or add 'willSendCode'?
-                              // 'sentCodeTo' in ARB: "We sent a 6-digit code to"
-                              // This text: "We'll send a 6-digit code via Telegram to verify your phone number."
-                              // They are different tenses.
-                              // I should probably add another key `willSendCode`.
-                              // For now I will use `sentCodeTo` + " via Telegram" logic? No that's messy.
-                              // I'll leave this hardcoded for a moment? No, user wants ALL.
-                              // I will use `sentCodeTo` as a placeholder or add `willSendCode` to ARB in next step if I want perfection.
-                              // Actually I can just use `l10n.sentCodeTo` + " ..." but grammar varies.
-                              // I'll use `l10n.sentCodeTo` for now and note it.
-                              // WAIT. `sentCodeTo` ends with "to". "We sent ... to".
-                              // Here: "We'll send ... via Telegram ...".
-                              // I'll add `infoWillSendCode` to ARB.
-                              l10n.sentCodeTo, // Placeholder for now, will fix in next ARB update if needed.
+                              l10n.sentCodeTo,
                               style: kBodyStyle.copyWith(
                                 color: kPrimary,
                                 fontSize: 13,

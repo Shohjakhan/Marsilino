@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:restaurant/l10n/gen/app_localizations.dart';
 import '../../logic/auth_cubit.dart';
 import '../../theme/app_theme.dart';
 import '../common/primary_button.dart';
@@ -97,7 +98,7 @@ class _OtpPageState extends State<OtpPage> {
     final otp = _fullOtp;
     if (otp.length != _otpLength) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter all 6 digits')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.enterAllDigits)),
       );
       return;
     }
@@ -138,6 +139,8 @@ class _OtpPageState extends State<OtpPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
@@ -157,7 +160,7 @@ class _OtpPageState extends State<OtpPage> {
         } else if (state is AuthOtpRequested) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Code resent'),
+              content: Text(l10n.codeSentSuccess),
               backgroundColor: kPrimary,
               behavior: SnackBarBehavior.floating,
               margin: const EdgeInsets.all(16),
@@ -171,7 +174,7 @@ class _OtpPageState extends State<OtpPage> {
         return Scaffold(
           backgroundColor: kBackground,
           appBar: AppBar(
-            title: Text('Verification', style: kTitleStyle),
+            title: Text(l10n.verification, style: kTitleStyle),
             backgroundColor: Colors.transparent,
             elevation: 0,
             leading: IconButton(
@@ -186,10 +189,13 @@ class _OtpPageState extends State<OtpPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 16),
-                  Text('Enter Code', style: kTitleStyle.copyWith(fontSize: 28)),
+                  Text(
+                    l10n.otpEnterCode,
+                    style: kTitleStyle.copyWith(fontSize: 28),
+                  ),
                   const SizedBox(height: 8),
                   Text(
-                    'We sent a 6-digit code to',
+                    l10n.sentCodeTo,
                     style: kBodyStyle.copyWith(color: kTextSecondary),
                   ),
                   const SizedBox(height: 4),
@@ -224,7 +230,7 @@ class _OtpPageState extends State<OtpPage> {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Verifying...',
+                          l10n.verifying,
                           style: kBodyStyle.copyWith(color: kTextSecondary),
                         ),
                       ],
@@ -243,16 +249,16 @@ class _OtpPageState extends State<OtpPage> {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Waiting for Telegram message...',
+                          l10n.waitingTelegram,
                           style: kBodyStyle.copyWith(color: kTextSecondary),
                         ),
                       ],
                     ),
                   const SizedBox(height: 40),
-                  _buildResendSection(),
+                  _buildResendSection(l10n),
                   const SizedBox(height: 32),
                   PrimaryButton(
-                    label: 'Verify',
+                    label: l10n.verify,
                     onPressed: isLoading ? null : _verifyOtp,
                     isLoading: isLoading,
                     enabled: _fullOtp.length == _otpLength && !isLoading,
@@ -323,12 +329,12 @@ class _OtpPageState extends State<OtpPage> {
     }
   }
 
-  Widget _buildResendSection() {
+  Widget _buildResendSection(AppLocalizations l10n) {
     if (_canResend) {
       return GestureDetector(
         onTap: _handleResend,
         child: Text(
-          'Resend code',
+          l10n.resendCode,
           style: kSubtitleStyle.copyWith(
             color: kPrimary,
             fontWeight: FontWeight.w600,
@@ -339,7 +345,7 @@ class _OtpPageState extends State<OtpPage> {
     }
 
     return Text(
-      'Resend code in $_formattedCooldown',
+      '${l10n.resendCodeIn} $_formattedCooldown',
       style: kBodyStyle.copyWith(color: kTextSecondary),
       textAlign: TextAlign.center,
     );

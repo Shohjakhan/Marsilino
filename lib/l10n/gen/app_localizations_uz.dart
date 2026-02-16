@@ -124,4 +124,152 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get tryAgain => 'Qayta urinish';
+
+  @override
+  String get signIn => 'Kirish';
+
+  @override
+  String get enterPhone => 'Telefon raqamingizni kiriting';
+
+  @override
+  String get phoneNumber => 'Telefon raqami';
+
+  @override
+  String get continueText => 'Davom etish';
+
+  @override
+  String get termsAgree => 'Davom etish orqali siz rozilik bildirasiz:';
+
+  @override
+  String get termsOfService => 'Foydalanish shartlari';
+
+  @override
+  String get privacyPolicy => 'Maxfiylik siyosati';
+
+  @override
+  String get verification => 'Tasdiqlash';
+
+  @override
+  String get otpEnterCode => 'Kodni kiriting';
+
+  @override
+  String get sentCodeTo => 'Biz 6 xonali kodni yubordik:';
+
+  @override
+  String get verifying => 'Tekshirilmoqda...';
+
+  @override
+  String get waitingTelegram => 'Telegram xabari kutilmoqda...';
+
+  @override
+  String get resendCode => 'Kodni qayta yuborish';
+
+  @override
+  String get resendCodeIn => 'Kodni qayta yuborish:';
+
+  @override
+  String get verify => 'Tasdiqlash';
+
+  @override
+  String get enterAllDigits => 'Iltimos, barcha 6 raqamni kiriting';
+
+  @override
+  String get completeProfile => 'Profilni to\'ldiring';
+
+  @override
+  String get enterDetails => 'Davom etish uchun ma\'lumotlaringizni kiriting';
+
+  @override
+  String get fullName => 'To\'liq ism';
+
+  @override
+  String get nameHint => 'masalan, John Doe';
+
+  @override
+  String get enterNameError => 'Iltimos, ismingizni kiriting';
+
+  @override
+  String get saveContinue => 'Saqlash va davom etish';
+
+  @override
+  String get findFood => 'Sevimli taomingizni toping';
+
+  @override
+  String get searchPlaceholder => 'Restoranlar, taomlarni qidirish...';
+
+  @override
+  String get all => 'Barchasi';
+
+  @override
+  String get welcomeBack => 'Xush kelibsiz';
+
+  @override
+  String get sendCodeTelegram => 'Kodni Telegram orqali yuborish';
+
+  @override
+  String get codeSentSuccess => 'Kod muvaffaqiyatli yuborildi';
+
+  @override
+  String get phoneError => 'Iltimos, telefon raqamingizni kiriting';
+
+  @override
+  String get phoneInvalid => 'Iltimos, to\'g\'ri telefon raqamni kiriting';
+
+  @override
+  String get nameLengthError =>
+      'Ism kamida 2 ta harfdan iborat bo\'lishi kerak';
+
+  @override
+  String get welcome => 'Xush kelibsiz';
+
+  @override
+  String get getStarted => 'Boshlash';
+
+  @override
+  String get discover => 'Kashf eting';
+
+  @override
+  String get quickFilters => 'Tezkor filtrlar';
+
+  @override
+  String get selectCategories => 'Kategoriyalarni tanlang';
+
+  @override
+  String get clearAll => 'Tozalash';
+
+  @override
+  String get apply => 'Qo\'llash';
+
+  @override
+  String get nearbyRestaurants => 'Yaqin atrofdagi restoranlar';
+
+  @override
+  String placesCount(Object count) {
+    return '$count joy';
+  }
+
+  @override
+  String get loading => 'Yuklanmoqda...';
+
+  @override
+  String get noRestaurantsFound => 'Restoranlar topilmadi';
+
+  @override
+  String get adjustFilters => 'Qidiruvni o\'zgartirib ko\'ring';
+
+  @override
+  String get searchNearby => 'Yaqin atrofdagi restoranlarni qidirish';
+
+  @override
+  String get loadingRestaurants => 'Restoranlar yuklanmoqda...';
+
+  @override
+  String get couldNotGetLocation => 'Joylashuvni aniqlab bo\'lmadi';
+
+  @override
+  String get locationPermissionDenied =>
+      'Joylashuvga ruxsat berilmadi. Sozlamalarda yoqing.';
+
+  @override
+  String get gettingLocation => 'Joylashuv aniqlanmoqda...';
 }

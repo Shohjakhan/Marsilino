@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:restaurant/l10n/gen/app_localizations.dart';
 import '../../logic/auth_cubit.dart';
 import '../../theme/app_theme.dart';
 import '../common/primary_button.dart';
@@ -29,6 +30,8 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
@@ -54,7 +57,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
         return Scaffold(
           backgroundColor: kBackground,
           appBar: AppBar(
-            title: Text('Complete Profile', style: kTitleStyle),
+            title: Text(l10n.completeProfile, style: kTitleStyle),
             backgroundColor: Colors.transparent,
             elevation: 0,
             automaticallyImplyLeading: false,
@@ -66,10 +69,10 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 16),
-                  Text('Welcome!', style: kTitleStyle.copyWith(fontSize: 28)),
+                  Text(l10n.welcome, style: kTitleStyle.copyWith(fontSize: 28)),
                   const SizedBox(height: 8),
                   Text(
-                    'Please enter your full name to complete registration.',
+                    l10n.enterDetails,
                     style: kBodyStyle.copyWith(color: kTextSecondary),
                   ),
                   const SizedBox(height: 40),
@@ -81,9 +84,9 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                       enabled: !isLoading,
                       style: kBodyStyle,
                       decoration: InputDecoration(
-                        labelText: 'Full Name',
+                        labelText: l10n.fullName,
                         labelStyle: kBodyStyle.copyWith(color: kTextSecondary),
-                        hintText: 'e.g., John Doe',
+                        hintText: l10n.nameHint,
                         hintStyle: kBodyStyle.copyWith(
                           color: kTextSecondary.withValues(alpha: 0.5),
                         ),
@@ -100,10 +103,10 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your name';
+                          return l10n.enterNameError;
                         }
                         if (value.trim().length < 2) {
-                          return 'Name must be at least 2 characters';
+                          return l10n.nameLengthError;
                         }
                         return null;
                       },
@@ -111,7 +114,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                   ),
                   const Spacer(),
                   PrimaryButton(
-                    label: 'Get Started',
+                    label: l10n.getStarted,
                     onPressed: isLoading ? null : _handleSubmit,
                     isLoading: isLoading,
                   ),

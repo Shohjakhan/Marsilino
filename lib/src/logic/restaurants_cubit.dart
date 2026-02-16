@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../data/models/restaurant.dart';
 import '../data/repositories/restaurants_repository.dart';
@@ -102,7 +103,9 @@ class RestaurantsCubit extends Cubit<RestaurantsState> {
       final result = await _repository.getRestaurants().timeout(
         _networkTimeout,
         onTimeout: () {
-          print('[RestaurantsCubit] Network timeout after $_networkTimeout');
+          debugPrint(
+            '[RestaurantsCubit] Network timeout after $_networkTimeout',
+          );
           throw TimeoutException('Network request timed out');
         },
       );
@@ -127,7 +130,7 @@ class RestaurantsCubit extends Cubit<RestaurantsState> {
         ),
       );
     } catch (e) {
-      print('[RestaurantsCubit] loadRestaurants error: $e');
+      debugPrint('[RestaurantsCubit] loadRestaurants error: $e');
       emit(
         RestaurantsError(
           message: 'Failed to load restaurants: ${e.toString()}',
@@ -167,7 +170,7 @@ class RestaurantsCubit extends Cubit<RestaurantsState> {
 
     // TODO: Implement pagination when API supports it
     // For now, this is a placeholder
-    print(
+    debugPrint(
       '[RestaurantsCubit] loadMore called - pagination not yet implemented',
     );
   }

@@ -124,4 +124,151 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tryAgain => 'Try Again';
+
+  @override
+  String get signIn => 'Sign In';
+
+  @override
+  String get enterPhone => 'Enter your phone number';
+
+  @override
+  String get phoneNumber => 'Phone Number';
+
+  @override
+  String get continueText => 'Continue';
+
+  @override
+  String get termsAgree => 'By continuing, you agree to our';
+
+  @override
+  String get termsOfService => 'Terms of Service';
+
+  @override
+  String get privacyPolicy => 'Privacy Policy';
+
+  @override
+  String get verification => 'Verification';
+
+  @override
+  String get otpEnterCode => 'Enter Code';
+
+  @override
+  String get sentCodeTo => 'We sent a 6-digit code to';
+
+  @override
+  String get verifying => 'Verifying...';
+
+  @override
+  String get waitingTelegram => 'Waiting for Telegram message...';
+
+  @override
+  String get resendCode => 'Resend code';
+
+  @override
+  String get resendCodeIn => 'Resend code in';
+
+  @override
+  String get verify => 'Verify';
+
+  @override
+  String get enterAllDigits => 'Please enter all 6 digits';
+
+  @override
+  String get completeProfile => 'Complete Profile';
+
+  @override
+  String get enterDetails => 'Enter your details to continue';
+
+  @override
+  String get fullName => 'Full Name';
+
+  @override
+  String get nameHint => 'e.g. John Doe';
+
+  @override
+  String get enterNameError => 'Please enter your name';
+
+  @override
+  String get saveContinue => 'Save & Continue';
+
+  @override
+  String get findFood => 'Find Your Favorite Food';
+
+  @override
+  String get searchPlaceholder => 'Search restaurants, food...';
+
+  @override
+  String get all => 'All';
+
+  @override
+  String get welcomeBack => 'Welcome Back';
+
+  @override
+  String get sendCodeTelegram => 'Send code via Telegram';
+
+  @override
+  String get codeSentSuccess => 'Code sent successfully';
+
+  @override
+  String get phoneError => 'Please enter your phone number';
+
+  @override
+  String get phoneInvalid => 'Please enter a valid phone number';
+
+  @override
+  String get nameLengthError => 'Name must be at least 2 characters';
+
+  @override
+  String get welcome => 'Welcome';
+
+  @override
+  String get getStarted => 'Get Started';
+
+  @override
+  String get discover => 'Discover';
+
+  @override
+  String get quickFilters => 'Quick Filters';
+
+  @override
+  String get selectCategories => 'Select categories to filter restaurants';
+
+  @override
+  String get clearAll => 'Clear All';
+
+  @override
+  String get apply => 'Apply';
+
+  @override
+  String get nearbyRestaurants => 'Nearby Restaurants';
+
+  @override
+  String placesCount(Object count) {
+    return '$count places';
+  }
+
+  @override
+  String get loading => 'Loading...';
+
+  @override
+  String get noRestaurantsFound => 'No restaurants found';
+
+  @override
+  String get adjustFilters => 'Try adjusting your search or filters';
+
+  @override
+  String get searchNearby => 'Search restaurants nearby';
+
+  @override
+  String get loadingRestaurants => 'Loading restaurants...';
+
+  @override
+  String get couldNotGetLocation => 'Could not get location';
+
+  @override
+  String get locationPermissionDenied =>
+      'Location permission denied. Enable in settings.';
+
+  @override
+  String get gettingLocation => 'Getting location...';
 }
