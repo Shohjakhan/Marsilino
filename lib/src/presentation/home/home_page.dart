@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/restaurant.dart';
-import '../../data/repositories/restaurants_repository.dart';
+import '../../logic/restaurants_cubit.dart';
 import '../../theme/app_theme.dart';
 import '../common/restaurant_card.dart';
 import '../restaurant_page/restaurant_page.dart';
@@ -16,42 +17,26 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
-  final RestaurantsRepository _repository = RestaurantsRepository();
-
-  List<Restaurant> _restaurants = [];
-  List<Restaurant> _filteredRestaurants = [];
-  bool _isLoading = true;
-  String? _error;
-  String? _currentLocation;
   final LocationService _locationService = LocationService();
 
-  List<String> _filterOptions = [];
-
-  final Set<String> _selectedFilters = {};
+  // We keep local state for location name to initialize it,
+  // or we can rely on Cubit if we push it there.
+  // The user wanted "no ui changes".
+  // Visuals depend on state.
 
   @override
   void initState() {
     super.initState();
-    _loadRestaurants();
+    final cubit = context.read<RestaurantsCubit>();
+    cubit.loadRestaurants();
+    cubit.loadFilterTags();
     _initLocation();
-    _loadTags();
-  }
-
-  Future<void> _loadTags() async {
-    final tags = await _repository.getFilterTags();
-    if (mounted) {
-      setState(() {
-        _filterOptions = tags;
-      });
-    }
   }
 
   Future<void> _initLocation() async {
     final locationName = await _locationService.getCurrentLocationName();
     if (mounted) {
-      setState(() {
-        _currentLocation = locationName;
-      });
+      context.read<RestaurantsCubit>().updateLocationName(locationName);
     }
   }
 
@@ -59,70 +44,28 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadRestaurants() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    final result = await _repository.getRestaurants();
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-        if (result.success) {
-          _restaurants = result.restaurants;
-          _applyFilters();
-        } else {
-          _error = result.error;
-        }
-      });
-    }
+    // We don't restore text in controller from cubit automatically here
+    // unless we want to persist search state across tabs.
+    // For now, let's keep it simple.
   }
 
   void _onSearchChanged(String query) {
-    _applyFilters();
+    context.read<RestaurantsCubit>().searchRestaurants(query);
   }
 
   void _toggleFilter(String filter) {
-    setState(() {
-      if (_selectedFilters.contains(filter)) {
-        _selectedFilters.remove(filter);
-      } else {
-        _selectedFilters.add(filter);
-      }
-      _applyFilters();
-    });
+    context.read<RestaurantsCubit>().applyFilter(filter);
   }
 
   void _clearFilters() {
-    setState(() {
-      _selectedFilters.clear();
-      _applyFilters();
-    });
+    context.read<RestaurantsCubit>().clearFilters();
   }
 
-  void _applyFilters() {
-    final query = _searchController.text.toLowerCase();
-
-    setState(() {
-      _filteredRestaurants = _restaurants.where((r) {
-        final matchesQuery =
-            r.name.toLowerCase().contains(query) ||
-            (r.tagsList.any((t) => t.toLowerCase().contains(query)));
-
-        final matchesFilters =
-            _selectedFilters.isEmpty ||
-            _selectedFilters.every((f) => r.tagsList.contains(f));
-
-        return matchesQuery && matchesFilters;
-      }).toList();
-    });
-  }
-
-  void _showQuickFilter(BuildContext context) {
+  void _showQuickFilter(
+    BuildContext context,
+    Set<String> activeFilters,
+    List<String> options,
+  ) {
     showModalBottomSheet(
       context: context,
       backgroundColor: kCardBg,
@@ -130,15 +73,17 @@ class _HomePageState extends State<HomePage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => QuickFilterSheet(
-        options: _filterOptions,
-        selectedFilters: _selectedFilters,
+        options: options,
+        selectedFilters: activeFilters,
         onToggle: (filter) {
           _toggleFilter(filter);
-          Navigator.pop(context); // Close after selection or keep open?
-          // Typically sheet stays open for multiple selects or closes on apply
-          // We'll update state, but sheet needs to rebuild to show selection.
-          // Since sheet is a separate widget, we need to pass state down or StatefulBuilder
-          // For simplicity in this revert, let's keep it simple and just close or reuse logic
+          // Navigator.pop(context); // User code had this commented/logic specific.
+          // User code: "Navigator.pop(context);" was effectively doing single select behavior in one version
+          // but the sheet logic I saw earlier had local state.
+          // In the user's latest revert:
+          // onToggle: (filter) { _toggleFilter(filter); Navigator.pop(context); }
+          // So I must preserve that.
+          Navigator.pop(context);
         },
         onClear: () {
           _clearFilters();
@@ -195,37 +140,85 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBackground,
-
       body: SafeArea(
-        child: RefreshIndicator(
-          color: kPrimary,
-          onRefresh: _loadRestaurants,
-          child: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(child: _buildHeader(context)),
-              SliverToBoxAdapter(child: _buildFilterChips(context)),
-              SliverToBoxAdapter(
-                child: _buildSectionTitle(
-                  _filteredRestaurants.length,
-                  _isLoading,
-                ),
+        child: BlocBuilder<RestaurantsCubit, RestaurantsState>(
+          builder: (context, state) {
+            final isLoading = state is RestaurantsLoading;
+            final error = state is RestaurantsError ? state.message : null;
+
+            List<Restaurant> filteredRestaurants = [];
+            Set<String> activeFilters = {};
+            List<String> options = [];
+            String? locationName;
+
+            if (state is RestaurantsLoaded) {
+              // restaurants = state.restaurants; // Unused
+              filteredRestaurants = state.filteredRestaurants;
+              activeFilters = state.activeFilters;
+              options = state.availableTags;
+              locationName = state.currentLocationName;
+            } else if (state is RestaurantsError) {
+              filteredRestaurants = state.cachedRestaurants;
+            } else if (state is RestaurantsLoading) {
+              filteredRestaurants = state.cachedRestaurants;
+            }
+
+            // If strictly matching user's variable names for logic mapped to UI:
+            // _filteredRestaurants => filteredRestaurants
+            // _isLoading => isLoading (mostly)
+            // _filterOptions => options
+            // _selectedFilters => activeFilters
+            // _currentLocation => locationName
+
+            return RefreshIndicator(
+              color: kPrimary,
+              onRefresh: () => context.read<RestaurantsCubit>().loadRestaurants(
+                forceRefresh: true,
               ),
-              if (_isLoading)
-                const SliverToBoxAdapter(child: _LoadingIndicator())
-              else if (_error != null)
-                SliverToBoxAdapter(child: _buildError(context, _error!))
-              else if (_filteredRestaurants.isEmpty)
-                SliverToBoxAdapter(child: _buildEmpty())
-              else
-                _buildRestaurantList(context, _filteredRestaurants),
-            ],
-          ),
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: _buildHeader(
+                      context,
+                      locationName ?? 'Loading...',
+                      activeFilters,
+                      options,
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: _buildFilterChips(context, activeFilters, options),
+                  ),
+                  SliverToBoxAdapter(
+                    child: _buildSectionTitle(
+                      filteredRestaurants.length,
+                      isLoading &&
+                          filteredRestaurants
+                              .isEmpty, // Only show dots if no data
+                    ),
+                  ),
+                  if (isLoading && filteredRestaurants.isEmpty)
+                    const SliverToBoxAdapter(child: _LoadingIndicator())
+                  else if (error != null && filteredRestaurants.isEmpty)
+                    SliverToBoxAdapter(child: _buildError(context, error))
+                  else if (filteredRestaurants.isEmpty && !isLoading)
+                    SliverToBoxAdapter(child: _buildEmpty())
+                  else
+                    _buildRestaurantList(context, filteredRestaurants),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(
+    BuildContext context,
+    String location,
+    Set<String> activeFilters,
+    List<String> options,
+  ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
       child: Column(
@@ -261,7 +254,7 @@ class _HomePageState extends State<HomePage> {
                     Icon(Icons.location_on, size: 16, color: kPrimary),
                     const SizedBox(width: 4),
                     Text(
-                      _currentLocation ?? 'Loading...',
+                      location,
                       style: kBodyStyle.copyWith(
                         fontWeight: FontWeight.w500,
                         fontSize: 13,
@@ -273,13 +266,17 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
           const SizedBox(height: 20),
-          _buildSearchInput(context),
+          _buildSearchInput(context, activeFilters, options),
         ],
       ),
     );
   }
 
-  Widget _buildSearchInput(BuildContext context) {
+  Widget _buildSearchInput(
+    BuildContext context,
+    Set<String> activeFilters,
+    List<String> options,
+  ) {
     return Container(
       decoration: BoxDecoration(
         color: kCardBg,
@@ -299,7 +296,7 @@ class _HomePageState extends State<HomePage> {
           ),
           suffixIcon: IconButton(
             icon: Icon(Icons.tune, color: kPrimary),
-            onPressed: () => _showQuickFilter(context),
+            onPressed: () => _showQuickFilter(context, activeFilters, options),
           ),
           filled: true,
           fillColor: kCardBg,
@@ -316,16 +313,20 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildFilterChips(BuildContext context) {
+  Widget _buildFilterChips(
+    BuildContext context,
+    Set<String> activeFilters,
+    List<String> options,
+  ) {
     return SizedBox(
       height: 48,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 24),
-        itemCount: _filterOptions.length,
+        itemCount: options.length,
         itemBuilder: (context, index) {
-          final filter = _filterOptions[index];
-          final isSelected = _selectedFilters.contains(filter);
+          final filter = options[index];
+          final isSelected = activeFilters.contains(filter);
 
           return Padding(
             padding: const EdgeInsets.only(right: 10),
@@ -431,7 +432,7 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: 24),
           OutlinedButton.icon(
-            onPressed: () => _loadRestaurants(),
+            onPressed: () => context.read<RestaurantsCubit>().loadRestaurants(),
             icon: const Icon(Icons.refresh),
             label: const Text('Try Again'),
             style: OutlinedButton.styleFrom(

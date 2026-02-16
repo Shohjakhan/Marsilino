@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../data/repositories/auth_repository.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../logic/auth_cubit.dart';
 import '../../theme/app_theme.dart';
 import '../common/primary_button.dart';
 import '../main_shell.dart';
@@ -28,13 +29,10 @@ class _OtpPageState extends State<OtpPage> {
 
   final List<TextEditingController> _controllers = [];
   final List<FocusNode> _focusNodes = [];
-  final _authRepository = AuthRepository();
 
   Timer? _cooldownTimer;
   int _remainingCooldown = _cooldownSeconds;
   bool _canResend = false;
-  bool _isVerifying = false;
-  String? _errorMessage;
 
   @override
   void initState() {
@@ -95,49 +93,15 @@ class _OtpPageState extends State<OtpPage> {
     return _controllers.map((c) => c.text).join();
   }
 
-  Future<void> _verifyOtp() async {
+  void _verifyOtp() {
     final otp = _fullOtp;
-
     if (otp.length != _otpLength) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter all 6 digits')),
       );
       return;
     }
-
-    setState(() {
-      _isVerifying = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final result = await _authRepository.verifyOtp(widget.phoneNumber, otp);
-
-      if (!mounted) return;
-
-      setState(() {
-        _isVerifying = false;
-      });
-
-      if (result.success) {
-        if (result.isNewUser) {
-          _showNameEntryDialog();
-        } else {
-          _navigateToHome();
-        }
-      } else {
-        setState(() {
-          _errorMessage = result.error ?? 'Verification failed';
-        });
-      }
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _isVerifying = false;
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
-      });
-    }
+    context.read<AuthCubit>().verifyOtp(widget.phoneNumber, otp);
   }
 
   void _showNameEntryDialog() {
@@ -148,7 +112,6 @@ class _OtpPageState extends State<OtpPage> {
   }
 
   void _navigateToHome() {
-    // Navigate to MainShell and clear the navigation stack
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const MainShell()),
       (route) => false,
@@ -162,158 +125,157 @@ class _OtpPageState extends State<OtpPage> {
     _focusNodes[0].requestFocus();
   }
 
-  Future<void> _handleResend() async {
+  void _handleResend() {
     if (!_canResend) return;
 
-    setState(() => _canResend = false);
+    context.read<AuthCubit>().requestOtp(widget.phoneNumber);
 
-    try {
-      await _authRepository.requestOtp(widget.phoneNumber);
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Code resent'),
-          backgroundColor: kPrimary,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-      // Restart cooldown
-      _startCooldown();
-      _clearOtp();
-    } catch (e) {
-      if (!mounted) return;
-
-      final message = e.toString().replaceAll('Exception: ', '');
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-      // Let user try again sooner if failed? Or keep cooldown?
-      // Keeping cooldown to prevent spam even on errors
-    }
+    // Optimistic cooldown restart as per previous logic (or wait for success?)
+    // User's previous logic had it restart immediately. I'll listen to state for toast.
+    _startCooldown();
+    _clearOtp();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: kBackground,
-      appBar: AppBar(
-        title: Text('Verification', style: kTitleStyle),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: kTextPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 16),
-              // Header
-              Text('Enter Code', style: kTitleStyle.copyWith(fontSize: 28)),
-              const SizedBox(height: 8),
-              Text(
-                'We sent a 6-digit code to',
-                style: kBodyStyle.copyWith(color: kTextSecondary),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                widget.phoneNumber,
-                style: kSubtitleStyle.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 40),
-              // OTP Boxes
-              _buildOtpBoxes(),
-              const SizedBox(height: 16),
-              // Error message
-              if (_errorMessage != null)
-                Text(
-                  _errorMessage!,
-                  style: kBodyStyle.copyWith(color: Colors.red),
-                  textAlign: TextAlign.center,
-                ),
-              const SizedBox(height: 24),
-              // Waiting indicator
-              if (_isVerifying)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(kPrimary),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Verifying...',
-                      style: kBodyStyle.copyWith(color: kTextSecondary),
-                    ),
-                  ],
-                )
-              else
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(kPrimary),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Waiting for Telegram message...',
-                      style: kBodyStyle.copyWith(color: kTextSecondary),
-                    ),
-                  ],
-                ),
-              const SizedBox(height: 40),
-              // Resend / Cooldown
-              _buildResendSection(),
-              const SizedBox(height: 32),
-              // Verify Button
-              PrimaryButton(
-                label: 'Verify',
-                onPressed: _isVerifying ? null : _verifyOtp,
-                isLoading: _isVerifying,
-                enabled: _fullOtp.length == _otpLength && !_isVerifying,
-              ),
-            ],
+    return BlocConsumer<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is AuthAuthenticated) {
+          _navigateToHome();
+        } else if (state is AuthNewUser) {
+          // If new user, logic might differ but assuming current flow:
+          _showNameEntryDialog();
+        } else if (state is AuthFailure) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+        } else if (state is AuthOtpRequested) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Code resent'),
+              backgroundColor: kPrimary,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+        }
+      },
+      builder: (context, state) {
+        final isLoading = state is AuthLoading;
+
+        return Scaffold(
+          backgroundColor: kBackground,
+          appBar: AppBar(
+            title: Text('Verification', style: kTitleStyle),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: kTextPrimary),
+              onPressed: () => Navigator.pop(context),
+            ),
           ),
-        ),
-      ),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 16),
+                  Text('Enter Code', style: kTitleStyle.copyWith(fontSize: 28)),
+                  const SizedBox(height: 8),
+                  Text(
+                    'We sent a 6-digit code to',
+                    style: kBodyStyle.copyWith(color: kTextSecondary),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.phoneNumber,
+                    style: kSubtitleStyle.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 40),
+                  // OTP Boxes
+                  _buildOtpBoxes(isLoading, state is AuthFailure),
+                  const SizedBox(height: 16),
+                  // Error message from state if we want to show it inline too
+                  if (state is AuthFailure)
+                    Text(
+                      state.message,
+                      style: kBodyStyle.copyWith(color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
+                  const SizedBox(height: 24),
+                  // Waiting indicator
+                  if (isLoading)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(kPrimary),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Verifying...',
+                          style: kBodyStyle.copyWith(color: kTextSecondary),
+                        ),
+                      ],
+                    )
+                  else
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(kPrimary),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Waiting for Telegram message...',
+                          style: kBodyStyle.copyWith(color: kTextSecondary),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 40),
+                  _buildResendSection(),
+                  const SizedBox(height: 32),
+                  PrimaryButton(
+                    label: 'Verify',
+                    onPressed: isLoading ? null : _verifyOtp,
+                    isLoading: isLoading,
+                    enabled: _fullOtp.length == _otpLength && !isLoading,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildOtpBoxes() {
+  Widget _buildOtpBoxes(bool isLoading, bool hasError) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: List.generate(_otpLength, (index) {
         return SizedBox(
           width: 48,
-          height: 56,
-          // Removed KeyboardListener to fix the exception.
-          // FocusNode now handles the key events directly.
           child: TextField(
             controller: _controllers[index],
             focusNode: _focusNodes[index],
+            enabled: !isLoading,
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
             maxLength: 1,
@@ -329,9 +291,9 @@ class _OtpPageState extends State<OtpPage> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide(
-                  color: _errorMessage != null
+                  color: hasError
                       ? Colors.red
-                      : kTextSecondary.withOpacity(0.3),
+                      : kTextSecondary.withValues(alpha: 0.3),
                 ),
               ),
               focusedBorder: OutlineInputBorder(

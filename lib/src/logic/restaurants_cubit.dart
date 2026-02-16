@@ -28,6 +28,8 @@ class RestaurantsLoaded extends RestaurantsState {
   final String searchQuery;
   final Set<String> activeFilters;
   final bool hasMore;
+  final List<String> availableTags;
+  final String? currentLocationName;
 
   RestaurantsLoaded({
     required this.restaurants,
@@ -35,7 +37,9 @@ class RestaurantsLoaded extends RestaurantsState {
     this.searchQuery = '',
     this.activeFilters = const {},
     this.hasMore = false,
-  });
+    List<String>? availableTags,
+    this.currentLocationName,
+  }) : availableTags = availableTags ?? const [];
 
   RestaurantsLoaded copyWith({
     List<Restaurant>? restaurants,
@@ -43,6 +47,8 @@ class RestaurantsLoaded extends RestaurantsState {
     String? searchQuery,
     Set<String>? activeFilters,
     bool? hasMore,
+    List<String>? availableTags,
+    String? currentLocationName,
   }) {
     return RestaurantsLoaded(
       restaurants: restaurants ?? this.restaurants,
@@ -50,6 +56,8 @@ class RestaurantsLoaded extends RestaurantsState {
       searchQuery: searchQuery ?? this.searchQuery,
       activeFilters: activeFilters ?? this.activeFilters,
       hasMore: hasMore ?? this.hasMore,
+      availableTags: availableTags ?? this.availableTags,
+      currentLocationName: currentLocationName ?? this.currentLocationName,
     );
   }
 }
@@ -173,6 +181,8 @@ class RestaurantsCubit extends Cubit<RestaurantsState> {
           filteredRestaurants: [],
           searchQuery: _currentSearchQuery,
           activeFilters: _currentFilters,
+          availableTags: availableTags,
+          currentLocationName: _currentLocationName,
         ),
       );
       return;
@@ -209,16 +219,75 @@ class RestaurantsCubit extends Cubit<RestaurantsState> {
         searchQuery: _currentSearchQuery,
         activeFilters: _currentFilters,
         hasMore: false, // Update when pagination is implemented
+        availableTags: availableTags,
+        currentLocationName: _currentLocationName,
       ),
     );
   }
 
-  /// Get all unique tags from cached restaurants.
+  /// Get all unique tags.
   List<String> get availableTags {
+    // If we loaded them from repo, return those.
+    // Otherwise derive from restaurants.
+    if (_cachedTags.isNotEmpty) return _cachedTags;
+
     final tags = <String>{};
     for (final restaurant in _cachedRestaurants) {
       tags.addAll(restaurant.tagsList);
     }
     return tags.toList()..sort();
+  }
+
+  List<String> _cachedTags = [];
+  String? _currentLocationName;
+
+  Future<void> loadFilterTags() async {
+    try {
+      _cachedTags = await _repository.getFilterTags();
+      _applyFiltersAndEmit();
+    } catch (_) {
+      // Ignore error for tags, just proceed
+    }
+  }
+
+  Future<void> updateLocationName(String name) async {
+    _currentLocationName = name;
+    _applyFiltersAndEmit();
+  }
+
+  /// Load nearby restaurants.
+  Future<void> loadNearbyRestaurants(double lat, double lng) async {
+    // If we have cached data, show it while loading
+    if (_cachedRestaurants.isNotEmpty) {
+      // Optional: emit loading with data
+    }
+
+    emit(RestaurantsLoading(cachedRestaurants: _cachedRestaurants));
+
+    try {
+      final result = await _repository.getNearbyRestaurants(
+        latitude: lat,
+        longitude: lng,
+      );
+
+      if (result.success) {
+        _cachedRestaurants = result.restaurants;
+        _applyFiltersAndEmit();
+      } else {
+        emit(
+          RestaurantsError(
+            message: result.error ?? 'Failed to load nearby restaurants',
+            cachedRestaurants: _cachedRestaurants,
+          ),
+        );
+      }
+    } catch (e) {
+      emit(
+        RestaurantsError(
+          message: 'Failed to load restaurants: ${e.toString()}',
+          cachedRestaurants: _cachedRestaurants,
+        ),
+      );
+    }
   }
 }
