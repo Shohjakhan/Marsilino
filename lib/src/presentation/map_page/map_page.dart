@@ -258,7 +258,7 @@ class _MapPageState extends State<MapPage> {
             tags: restaurant.tagsList,
             galleryImages: restaurant.galleryImages,
             logoUrl: restaurant.logo,
-            discount: restaurant.discountText,
+            cashback: restaurant.cashbackText,
             instagram: restaurant.instagram,
             telegram: restaurant.telegram,
           ),
@@ -622,7 +622,7 @@ class _MapPageState extends State<MapPage> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (restaurant.discountText != null) ...[
+                        if (restaurant.cashbackText != null) ...[
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -634,7 +634,7 @@ class _MapPageState extends State<MapPage> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              restaurant.discountText!,
+                              restaurant.cashbackText!,
                               style: const TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,

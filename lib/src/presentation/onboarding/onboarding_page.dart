@@ -22,19 +22,18 @@ class _OnboardingPageState extends State<OnboardingPage> {
   static const List<Map<String, String>> _slides = [
     {
       'title': 'Discover Restaurants Near You',
-      'description':
-          'Find the best places around you with exclusive discounts.',
+      'description': 'Find the best places around you with exclusive cashback.',
       'icon': 'map',
     },
     {
-      'title': 'Real Discounts, Every Visit',
-      'description': 'Use our app at partner restaurants and save instantly.',
-      'icon': 'discount',
+      'title': 'Real Cashback, Every Visit',
+      'description': 'Use our app at partner restaurants and earn cashback.',
+      'icon': 'cashback',
     },
     {
       'title': 'Simple and Fast',
       'description':
-          'Show your discount code at checkout — no online payment needed.',
+          'Show your cashback code at checkout — no online payment needed.',
       'icon': 'flash',
     },
     {
@@ -208,7 +207,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       case 'map':
         icon = Icons.map_outlined;
         break;
-      case 'discount':
+      case 'cashback':
         icon = Icons.percent_outlined;
         break;
       case 'flash':
@@ -229,7 +228,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: iconType == 'discount'
+            color: iconType == 'cashback'
                 ? kSuccess.withValues(alpha: 0.15)
                 : kPrimary.withValues(alpha: 0.15),
             blurRadius: 60,
@@ -241,7 +240,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       child: Icon(
         icon,
         size: 100,
-        color: iconType == 'discount' ? kSuccess : kPrimary,
+        color: iconType == 'cashback' ? kSuccess : kPrimary,
       ),
     );
   }

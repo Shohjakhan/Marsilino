@@ -16,14 +16,14 @@ class RedeemLoading extends RedeemState {}
 
 /// Transaction succeeded.
 class RedeemSuccess extends RedeemState {
-  final double discountPercent;
-  final double sumAfterDiscount;
+  final double cashbackPercent;
+  final double amountPaid;
   final double savedAmount;
   final double originalAmount;
 
   RedeemSuccess({
-    required this.discountPercent,
-    required this.sumAfterDiscount,
+    required this.cashbackPercent,
+    required this.amountPaid,
     required this.savedAmount,
     required this.originalAmount,
   });
@@ -79,7 +79,7 @@ class RedeemCubit extends Cubit<RedeemState> {
       final result = await _repository
           .createTransaction(
             restaurantId: restaurantId,
-            sumBeforeDiscount: amount,
+            amountPaid: amount,
             cashierCode: cashierCode,
           )
           .timeout(
@@ -92,8 +92,8 @@ class RedeemCubit extends Cubit<RedeemState> {
       if (result.success) {
         emit(
           RedeemSuccess(
-            discountPercent: result.discountPercent ?? 0,
-            sumAfterDiscount: result.sumAfterDiscount ?? amount,
+            cashbackPercent: result.cashbackPercent ?? 0,
+            amountPaid: result.amountPaid ?? amount,
             savedAmount: result.savedAmount ?? 0,
             originalAmount: amount,
           ),

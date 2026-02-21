@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:restaurant/l10n/gen/app_localizations.dart';
 import 'package:provider/provider.dart';
+import '../../../domain/cashback/cashback_cubit.dart';
+import '../../../domain/cashback/cashback_state.dart';
 import '../../data/repositories/transactions_repository.dart';
 import '../../data/repositories/bookings_repository.dart';
 import '../../data/repositories/restaurants_repository.dart';
@@ -31,6 +34,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final _bookingsRepository = BookingsRepository();
   final _restaurantsRepository = RestaurantsRepository();
   final _userRepository = UserRepository();
+  final _cashbackCubit = CashbackCubit();
   late Future<UserModel> _userFuture;
   String? _fcmToken;
 
@@ -48,6 +52,13 @@ class _ProfilePageState extends State<ProfilePage> {
     _loadTransactions();
     _loadBookings();
     _loadFcmToken();
+    _cashbackCubit.loadBalance();
+  }
+
+  @override
+  void dispose() {
+    _cashbackCubit.close();
+    super.dispose();
   }
 
   Future<void> _loadFcmToken() async {
@@ -190,6 +201,9 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               // Profile header
               _buildProfileHeader(),
+              const SizedBox(height: 24),
+              // Cashback wallet
+              _buildWalletCard(),
               const SizedBox(height: 32),
               // Language selector
               _buildLanguageSelector(),
@@ -255,6 +269,187 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
     );
+  }
+
+  Widget _buildWalletCard() {
+    return BlocProvider.value(
+      value: _cashbackCubit,
+      child: BlocBuilder<CashbackCubit, CashbackState>(
+        bloc: _cashbackCubit,
+        builder: (context, state) {
+          return Column(
+            children: [
+              // Wallet card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [kPrimaryBold, kPrimary],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(kCardRadius),
+                  boxShadow: [
+                    BoxShadow(
+                      color: kPrimaryBold.withValues(alpha: 0.35),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.account_balance_wallet,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Marsilino Cashback',
+                          style: kSubtitleStyle.copyWith(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Balance',
+                      style: kBodyStyle.copyWith(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'UZS ${_formatBalance(state.balance)}',
+                      style: kTitleStyle.copyWith(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (state.lastAddedAmount > 0) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '+UZS ${_formatBalance(state.lastAddedAmount)} recent',
+                          style: kBodyStyle.copyWith(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Transfer button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: state.isLoading || state.balance <= 0
+                      ? null
+                      : () async {
+                          await _cashbackCubit.transferToCard();
+                          if (mounted &&
+                              _cashbackCubit.state.balance == 0 &&
+                              _cashbackCubit.state.errorMessage == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text(
+                                  'Balance transferred to your card!',
+                                ),
+                                backgroundColor: kSuccess,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                margin: const EdgeInsets.all(16),
+                              ),
+                            );
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kPrimaryBold,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: kTextSecondary.withValues(
+                      alpha: 0.2,
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(kButtonRadius),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: state.isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : Text(
+                          'Transfer to Card',
+                          style: kSubtitleStyle.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ),
+              if (state.errorMessage != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  state.errorMessage!,
+                  style: kBodyStyle.copyWith(color: kError, fontSize: 13),
+                ),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  String _formatBalance(double number) {
+    final intValue = number.round();
+    final text = intValue.toString();
+    final buffer = StringBuffer();
+    final len = text.length;
+    for (int i = 0; i < len; i++) {
+      if (i > 0 && (len - i) % 3 == 0) buffer.write(',');
+      buffer.write(text[i]);
+    }
+    return buffer.toString();
   }
 
   Widget _buildProfileHeader() {
@@ -452,7 +647,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     final totalSaved = _transactions.fold<double>(
       0,
-      (sum, t) => sum + t.discountAmount,
+      (sum, t) => sum + t.cashbackAmount,
     );
 
     return Row(
@@ -540,7 +735,7 @@ class _ProfilePageState extends State<ProfilePage> {
   // ... _buildTransactionItem is mostly data, not UI strings except currency?
   // UZS is usually standard.
   // Date formatting might need locale, but for now I leave it as is or could use DateFormat from intl later.
-  // I will just use existing logic for item, as labels "Saved", "Discount" are implicit in UI.
+  // I will just use existing logic for item, as labels "Saved", "Cashback" are implicit in UI.
 
   Widget _buildTransactionItem(Transaction transaction) {
     return Container(
@@ -592,7 +787,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ],
                 ),
               ),
-              // Discount badge
+              // Cashback badge
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -600,7 +795,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '-${transaction.discountPercent.round()}%',
+                  '-${transaction.cashbackPercent.round()}%',
                   style: kBodyStyle.copyWith(
                     color: Colors.green,
                     fontWeight: FontWeight.bold,
@@ -624,7 +819,7 @@ class _ProfilePageState extends State<ProfilePage> {
               // Saved
               _buildAmountColumn(
                 'Saved',
-                '-${_formatNumber(transaction.discountAmount.round())} UZS',
+                '-${_formatNumber(transaction.cashbackAmount.round())} UZS',
                 Colors.green,
               ),
               // Final

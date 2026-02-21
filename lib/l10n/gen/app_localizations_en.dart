@@ -54,7 +54,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noRedemptions => 'No redemptions yet';
 
   @override
-  String get noRedemptionsSub => 'Your discount redemptions will appear here';
+  String get noRedemptionsSub => 'Your cashback redemptions will appear here';
 
   @override
   String get about => 'About';
@@ -75,7 +75,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewFullMenu => 'View Full Menu';
 
   @override
-  String get redeemDiscount => 'Redeem Discount';
+  String get redeemCashback => 'Redeem Cashback';
 
   @override
   String get enterAmount => 'Please enter the bill amount';

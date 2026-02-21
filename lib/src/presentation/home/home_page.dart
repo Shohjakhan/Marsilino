@@ -113,7 +113,7 @@ class _HomePageState extends State<HomePage> {
             tags: restaurant.tagsList,
             galleryImages: restaurant.galleryImages,
             logoUrl: restaurant.logo,
-            discount: restaurant.discountText,
+            cashback: restaurant.cashbackText,
             instagram: restaurant.instagram,
             telegram: restaurant.telegram,
             latitude: restaurant.latitude,
@@ -131,7 +131,7 @@ class _HomePageState extends State<HomePage> {
       workingHours: r.workingHours ?? '',
       logoUrl: r.logo,
       tags: r.tagsList,
-      discount: r.discountText,
+      cashback: r.cashbackText,
       latitude: r.latitude,
       longitude: r.longitude,
     );

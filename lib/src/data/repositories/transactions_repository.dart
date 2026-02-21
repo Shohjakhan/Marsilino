@@ -6,9 +6,9 @@ class Transaction {
   final String restaurantId;
   final String restaurantName;
   final double amount;
-  final double discountAmount;
+  final double cashbackAmount;
   final double finalAmount;
-  final double discountPercent;
+  final double cashbackPercent;
   final DateTime date;
   final String status;
 
@@ -17,9 +17,9 @@ class Transaction {
     required this.restaurantId,
     required this.restaurantName,
     required this.amount,
-    required this.discountAmount,
+    required this.cashbackAmount,
     required this.finalAmount,
-    required this.discountPercent,
+    required this.cashbackPercent,
     required this.date,
     required this.status,
   });
@@ -33,9 +33,9 @@ class Transaction {
       restaurantName:
           json['restaurant_name'] as String? ?? 'Unknown Restaurant',
       amount: (json['sum_before_discount'] as num?)?.toDouble() ?? 0,
-      discountAmount: (json['saved_amount'] as num?)?.toDouble() ?? 0,
+      cashbackAmount: (json['saved_amount'] as num?)?.toDouble() ?? 0,
       finalAmount: (json['sum_after_discount'] as num?)?.toDouble() ?? 0,
-      discountPercent: (json['discount_percent'] as num?)?.toDouble() ?? 0,
+      cashbackPercent: (json['discount_percent'] as num?)?.toDouble() ?? 0,
       date: DateTime.parse(json['created_at'] as String),
       status: json['status'] as String? ?? 'completed',
     );
@@ -56,16 +56,16 @@ class TransactionsListResult {
 
 class TransactionResult {
   final bool success;
-  final double? discountPercent;
-  final double? sumAfterDiscount;
+  final double? cashbackPercent;
+  final double? amountPaid;
   final double? savedAmount;
   final String? error;
   final String? errorCode;
 
   TransactionResult({
     required this.success,
-    this.discountPercent,
-    this.sumAfterDiscount,
+    this.cashbackPercent,
+    this.amountPaid,
     this.savedAmount,
     this.error,
     this.errorCode,
@@ -74,8 +74,8 @@ class TransactionResult {
   factory TransactionResult.success(Map<String, dynamic> data) {
     return TransactionResult(
       success: true,
-      discountPercent: (data['discount_percent'] as num?)?.toDouble(),
-      sumAfterDiscount: (data['sum_after_discount'] as num?)?.toDouble(),
+      cashbackPercent: (data['discount_percent'] as num?)?.toDouble(),
+      amountPaid: (data['sum_after_discount'] as num?)?.toDouble(),
       savedAmount: (data['saved_amount'] as num?)?.toDouble(),
     );
   }
@@ -93,7 +93,7 @@ class TransactionsRepository {
 
   Future<TransactionResult> createTransaction({
     required String restaurantId,
-    required double sumBeforeDiscount,
+    required double amountPaid,
     required String cashierCode,
   }) async {
     try {
@@ -102,7 +102,7 @@ class TransactionsRepository {
         '/transactions/',
         data: {
           'restaurant_id': restaurantId,
-          'sum_before_discount': sumBeforeDiscount,
+          'sum_before_discount': amountPaid,
           'cashier_code': cashierCode,
         },
         // ApiClient typically handles headers if it manages tokens?

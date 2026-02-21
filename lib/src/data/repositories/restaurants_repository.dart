@@ -49,7 +49,7 @@ class RestaurantsRepository {
         workingHours: '09:00 - 23:00',
         contactInformation: '+998 71 200 00 01',
         hashtags: 'Uzbek, Plov, Family, Halal',
-        discountPercentage: 15,
+        cashbackPercentage: 15,
         latitude: 41.3111,
         longitude: 69.2406,
         logo: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
@@ -112,7 +112,7 @@ class RestaurantsRepository {
         ],
         bookingAvailable: true,
         maxPeople: 50,
-        discountPercentage: 20,
+        cashbackPercentage: 20,
       ),
       const Restaurant(
         id: 'mock_5',

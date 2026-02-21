@@ -19,8 +19,8 @@ class RestaurantCardData {
   /// Tags/hashtags (e.g., "family", "bar").
   final List<String> tags;
 
-  /// Discount text (e.g., "10% off"). Null if no discount.
-  final String? discount;
+  /// Cashback text (e.g., "10% cashback"). Null if no cashback.
+  final String? cashback;
   final double? latitude;
   final double? longitude;
 
@@ -30,7 +30,7 @@ class RestaurantCardData {
     required this.workingHours,
     this.logoUrl,
     this.tags = const [],
-    this.discount,
+    this.cashback,
     this.latitude,
     this.longitude,
   });
@@ -53,7 +53,7 @@ class RestaurantCardData {
       ],
       logoUrl: logoUrl,
       menuImageUrl: 'https://picsum.photos/seed/${name.hashCode}menu/600/800',
-      discount: discount,
+      cashback: cashback,
       latitude: latitude,
       longitude: longitude,
     );
@@ -61,7 +61,7 @@ class RestaurantCardData {
 }
 
 /// Restaurant card used on Home & Liked lists.
-/// Displays logo, name, address, hours, tags, and optional discount pill.
+/// Displays logo, name, address, hours, tags, and optional cashback pill.
 class RestaurantCard extends StatelessWidget {
   /// Restaurant data to display.
   final RestaurantCardData data;
@@ -91,6 +91,7 @@ class RestaurantCard extends StatelessWidget {
           boxShadow: const [kCardShadow],
         ),
         child: Stack(
+          clipBehavior: Clip.none,
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
@@ -104,8 +105,8 @@ class RestaurantCard extends StatelessWidget {
                 ],
               ),
             ),
-            // Top-right: Discount pill
-            if (data.discount != null) _buildDiscountPill(),
+            // Top-right: Cashback pill
+            if (data.cashback != null) _buildCashbackPill(),
           ],
         ),
       ),
@@ -226,9 +227,9 @@ class RestaurantCard extends StatelessWidget {
     );
   }
 
-  Widget _buildDiscountPill() {
+  Widget _buildCashbackPill() {
     return Positioned(
-      top: 12,
+      top: -10,
       right: 12,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -248,7 +249,7 @@ class RestaurantCard extends StatelessWidget {
           ],
         ),
         child: Text(
-          data.discount!,
+          data.cashback!,
           style: const TextStyle(
             fontFamily: '.SF Pro Text',
             fontSize: 11,

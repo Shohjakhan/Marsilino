@@ -10,7 +10,7 @@ class Restaurant {
   final Map<String, dynamic>? socialMedia;
   final List<dynamic>? menu;
   final String? locationText;
-  final double? discountPercentage;
+  final double? cashbackPercentage;
   final List<String> galleryImages;
   final double? latitude;
   final double? longitude;
@@ -31,7 +31,7 @@ class Restaurant {
     this.menu,
     this.menuUrl,
     this.locationText,
-    this.discountPercentage,
+    this.cashbackPercentage,
     this.galleryImages = const [],
     this.latitude,
     this.longitude,
@@ -78,7 +78,7 @@ class Restaurant {
       menu: menuList,
       menuUrl: menuUrl,
       locationText: json['location_text'] as String?,
-      discountPercentage: _parseDouble(json['discount_percentage']),
+      cashbackPercentage: _parseDouble(json['discount_percentage']),
       galleryImages: gallery,
       latitude: _parseDouble(json['latitude']),
       longitude: _parseDouble(json['longitude']),
@@ -108,10 +108,10 @@ class Restaurant {
         .toList();
   }
 
-  /// Get discount text (e.g., "10% off").
-  String? get discountText {
-    if (discountPercentage == null || discountPercentage! <= 0) return null;
-    return '${discountPercentage!.toInt()}% off';
+  /// Get cashback text (e.g., "10% cashback").
+  String? get cashbackText {
+    if (cashbackPercentage == null || cashbackPercentage! <= 0) return null;
+    return '${cashbackPercentage!.toInt()}% cashback';
   }
 
   /// Get Instagram handle from social media.

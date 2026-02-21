@@ -54,7 +54,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get noRedemptions => 'Xaridlar yo\'q';
 
   @override
-  String get noRedemptionsSub => 'Bu yerda chegirmalar tarixi ko\'rinadi';
+  String get noRedemptionsSub => 'Bu yerda keshbek tarixi ko\'rinadi';
 
   @override
   String get about => 'Haqida';
@@ -75,7 +75,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get viewFullMenu => 'Menyuni ko\'rish';
 
   @override
-  String get redeemDiscount => 'Chegirmani olish';
+  String get redeemCashback => 'Keshbekni olish';
 
   @override
   String get enterAmount => 'Hisob summasini kiriting';

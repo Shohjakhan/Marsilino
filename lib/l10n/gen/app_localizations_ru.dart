@@ -54,7 +54,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get noRedemptions => 'Нет покупок';
 
   @override
-  String get noRedemptionsSub => 'Здесь будет история ваших скидок';
+  String get noRedemptionsSub => 'Здесь будет история вашего кэшбэка';
 
   @override
   String get about => 'О ресторане';
@@ -75,7 +75,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get viewFullMenu => 'Посмотреть меню';
 
   @override
-  String get redeemDiscount => 'Получить скидку';
+  String get redeemCashback => 'Получить кэшбэк';
 
   @override
   String get enterAmount => 'Введите сумму счета';

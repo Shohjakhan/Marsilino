@@ -193,7 +193,7 @@ abstract class AppLocalizations {
   /// No description provided for @noRedemptionsSub.
   ///
   /// In en, this message translates to:
-  /// **'Your discount redemptions will appear here'**
+  /// **'Your cashback redemptions will appear here'**
   String get noRedemptionsSub;
 
   /// No description provided for @about.
@@ -232,11 +232,11 @@ abstract class AppLocalizations {
   /// **'View Full Menu'**
   String get viewFullMenu;
 
-  /// No description provided for @redeemDiscount.
+  /// No description provided for @redeemCashback.
   ///
   /// In en, this message translates to:
-  /// **'Redeem Discount'**
-  String get redeemDiscount;
+  /// **'Redeem Cashback'**
+  String get redeemCashback;
 
   /// No description provided for @enterAmount.
   ///
