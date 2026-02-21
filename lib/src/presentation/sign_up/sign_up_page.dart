@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../logic/auth_cubit.dart';
+import '../../domain/auth/auth_cubit.dart';
 import '../../theme/app_theme.dart';
 import '../common/primary_button.dart';
 import '../sign_in/otp_page.dart';

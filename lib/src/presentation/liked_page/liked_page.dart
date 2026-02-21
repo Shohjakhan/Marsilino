@@ -386,8 +386,8 @@ class _LikedRestaurantCard extends StatelessWidget {
             ],
           ),
         const SizedBox(height: 6),
-        if (restaurant.discountPercentage != null &&
-            restaurant.discountPercentage! > 0)
+        if (restaurant.cashbackPercentage != null &&
+            restaurant.cashbackPercentage! > 0)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -395,7 +395,7 @@ class _LikedRestaurantCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              '${restaurant.discountPercentage!.round()}% OFF',
+              '${restaurant.cashbackPercentage!.round()}% CASHBACK',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 11,

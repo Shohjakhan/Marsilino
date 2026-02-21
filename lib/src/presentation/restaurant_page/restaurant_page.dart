@@ -22,7 +22,7 @@ class RestaurantData {
   final List<String> galleryImages;
   final String? logoUrl;
   final String? menuImageUrl;
-  final String? discount;
+  final String? cashback;
   final String? instagram;
   final String? telegram;
 
@@ -44,7 +44,7 @@ class RestaurantData {
     this.galleryImages = const [],
     this.logoUrl,
     this.menuImageUrl,
-    this.discount,
+    this.cashback,
     this.instagram,
     this.telegram,
     this.bookingAvailable,
@@ -54,10 +54,10 @@ class RestaurantData {
     this.longitude,
   });
 
-  /// Extract discount percentage from discount string (e.g., "10% off" -> 10).
-  int get discountPercent {
-    if (discount == null) return 0;
-    final match = RegExp(r'(\d+)').firstMatch(discount!);
+  /// Extract cashback percentage from cashback string (e.g., "10% cashback" -> 10).
+  int get cashbackPercent {
+    if (cashback == null) return 0;
+    final match = RegExp(r'(\d+)').firstMatch(cashback!);
     return match != null ? int.parse(match.group(1)!) : 0;
   }
 
@@ -74,7 +74,7 @@ class RestaurantData {
       galleryImages: r.galleryImages,
       logoUrl: r.logo,
       menuImageUrl: r.menuUrl,
-      discount: r.discountText,
+      cashback: r.cashbackText,
       instagram: r.instagram,
       telegram: r.telegram,
       bookingAvailable: r.bookingAvailable,
@@ -236,7 +236,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
     ).dispatch(context);
   }
 
-  void _redeemDiscount() {
+  void _redeemCashback() {
     if (_data == null) return;
     if (widget.restaurantId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -251,7 +251,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
           restaurantId: widget.restaurantId!,
           restaurantName: _data!.name,
           logoUrl: _data!.logoUrl,
-          discountPercent: _data!.discountPercent,
+          cashbackPercent: _data!.cashbackPercent,
         ),
       ),
     );
@@ -351,7 +351,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
             ],
           ),
           // Floating bottom button
-          if (_data!.discount != null) _buildFloatingButton(),
+          if (_data!.cashback != null) _buildFloatingButton(),
         ],
       ),
     );
@@ -468,7 +468,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    if (_data!.discount != null)
+                    if (_data!.cashback != null)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
@@ -479,7 +479,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          _data!.discount!,
+                          _data!.cashback!,
                           style: const TextStyle(
                             fontFamily: '.SF Pro Text',
                             fontSize: 11,
@@ -835,8 +835,8 @@ class _RestaurantPageState extends State<RestaurantPage> {
       right: 24,
       bottom: 24,
       child: PrimaryButton(
-        label: '${l10n.redeemDiscount} (${_data!.discount})',
-        onPressed: _redeemDiscount,
+        label: '${l10n.redeemCashback} (${_data!.cashback})',
+        onPressed: _redeemCashback,
       ),
     );
   }

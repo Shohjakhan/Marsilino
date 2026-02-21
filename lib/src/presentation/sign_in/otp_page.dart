@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:restaurant/l10n/gen/app_localizations.dart';
-import '../../logic/auth_cubit.dart';
+import '../../domain/auth/auth_cubit.dart';
 import '../../theme/app_theme.dart';
 import '../common/primary_button.dart';
 import '../main_shell.dart';

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import '../../../domain/cashback/cashback_cubit.dart';
-import '../../../domain/qr/qr_cubit.dart';
-import '../../../domain/qr/qr_state.dart';
+import '../../domain/cashback/cashback_cubit.dart';
+import '../../domain/qr/qr_cubit.dart';
+import '../../domain/qr/qr_state.dart';
 import '../../theme/app_theme.dart';
 import '../common/primary_button.dart';
 

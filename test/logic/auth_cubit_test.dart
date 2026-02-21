@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:restaurant/src/data/repositories/auth_repository.dart';
 import 'package:restaurant/src/data/repositories/token_storage.dart';
-import 'package:restaurant/src/logic/auth_cubit.dart';
+import 'package:restaurant/src/domain/auth/auth_cubit.dart';
 
 // Mock classes
 class MockAuthRepository extends Mock implements AuthRepository {}

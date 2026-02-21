@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:restaurant/l10n/gen/app_localizations.dart';
 import '../../data/models/restaurant.dart';
-import '../../logic/restaurants_cubit.dart';
+import '../../domain/restaurants/restaurants_cubit.dart';
 import '../../theme/app_theme.dart';
 import '../common/restaurant_card.dart';
 import '../restaurant_page/restaurant_page.dart';

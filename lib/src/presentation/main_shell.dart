@@ -8,6 +8,7 @@ import 'liked_page/liked_page.dart';
 import 'map_page/map_page.dart';
 import 'profile_page/profile_page.dart';
 import 'common/navigation_notifications.dart';
+import 'qr_scan/qr_scan_page.dart';
 
 /// Main app shell with bottom tab navigation.
 /// Contains 4 tabs: Home, Map, Likes, Profile.
@@ -35,6 +36,13 @@ class _MainShellState extends State<MainShell> {
     setState(() {
       _currentIndex = index;
     });
+  }
+
+  void _onQrTap() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const QrScanPage()),
+    );
   }
 
   @override
@@ -95,6 +103,7 @@ class _MainShellState extends State<MainShell> {
         bottomNavigationBar: BottomNav(
           currentIndex: _currentIndex,
           onTap: _onTabTapped,
+          onQrTap: _onQrTap,
           items: navItems,
         ),
       ),

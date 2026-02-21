@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../src/data/models/restaurant.dart';
-import '../../src/data/repositories/restaurants_repository.dart';
+import '../../data/models/restaurant.dart';
+import '../../data/repositories/restaurants_repository.dart';
 import 'restaurants_state.dart';
 
 export 'restaurants_state.dart';

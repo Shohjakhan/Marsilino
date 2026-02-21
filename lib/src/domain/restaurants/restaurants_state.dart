@@ -1,4 +1,4 @@
-import '../../src/data/models/restaurant.dart';
+import '../../data/models/restaurant.dart';
 
 /// Restaurants state.
 sealed class RestaurantsState {}

@@ -1,4 +1,4 @@
-import '../../src/data/repositories/transactions_repository.dart';
+import '../../data/repositories/transactions_repository.dart';
 
 /// Transactions state.
 sealed class TransactionsState {}

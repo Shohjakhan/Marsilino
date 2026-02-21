@@ -8,7 +8,7 @@ import '../common/rounded_card.dart';
 /// Result state for redemption.
 enum RedeemResult { success, expired, invalid, cashierMismatch }
 
-/// Redeem Discount page for applying restaurant discounts.
+/// Redeem Cashback page for applying restaurant cashback.
 class RedeemPage extends StatefulWidget {
   /// Restaurant ID
   final String restaurantId;
@@ -19,15 +19,15 @@ class RedeemPage extends StatefulWidget {
   /// Restaurant logo URL.
   final String? logoUrl;
 
-  /// Discount percentage.
-  final int discountPercent;
+  /// Cashback percentage.
+  final int cashbackPercent;
 
   const RedeemPage({
     super.key,
     required this.restaurantId,
     required this.restaurantName,
     this.logoUrl,
-    this.discountPercent = 10,
+    this.cashbackPercent = 10,
   });
 
   @override
@@ -43,7 +43,7 @@ class _RedeemPageState extends State<RedeemPage> {
   bool _isLoading = false;
   RedeemResult? _result;
   double? _originalAmount;
-  double? _discountAmount;
+  double? _cashbackAmount;
   double? _finalAmount;
 
   @override
@@ -94,7 +94,7 @@ class _RedeemPageState extends State<RedeemPage> {
 
       final result = await _transactionsRepository.createTransaction(
         restaurantId: widget.restaurantId,
-        sumBeforeDiscount: _originalAmount!,
+        amountPaid: _originalAmount!,
         cashierCode: _cashierCodeController.text,
       );
 
@@ -104,8 +104,8 @@ class _RedeemPageState extends State<RedeemPage> {
         _isLoading = false;
         if (result.success) {
           _result = RedeemResult.success;
-          _finalAmount = result.sumAfterDiscount;
-          _discountAmount =
+          _finalAmount = result.amountPaid;
+          _cashbackAmount =
               result.savedAmount ?? (_originalAmount! - (_finalAmount ?? 0));
         } else {
           _mapErrorToResult(result.errorCode);
@@ -171,7 +171,7 @@ class _RedeemPageState extends State<RedeemPage> {
     return Scaffold(
       backgroundColor: kBackground,
       appBar: AppBar(
-        title: Text('Redeem Discount', style: kTitleStyle),
+        title: Text('Redeem Cashback', style: kTitleStyle),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -227,11 +227,11 @@ class _RedeemPageState extends State<RedeemPage> {
             ),
             const SizedBox(height: 32),
             // Preview
-            _buildDiscountPreview(),
+            _buildCashbackPreview(),
             const SizedBox(height: 32),
             // Redeem button
             PrimaryButton(
-              label: 'Redeem Discount',
+              label: 'Redeem Cashback',
               onPressed: _handleRedeem,
               isLoading: _isLoading,
             ),
@@ -300,7 +300,7 @@ class _RedeemPageState extends State<RedeemPage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${widget.discountPercent}% off',
+                    '${widget.cashbackPercent}% cashback',
                     style: const TextStyle(
                       fontFamily: '.SF Pro Text',
                       fontSize: 12,
@@ -433,15 +433,14 @@ class _RedeemPageState extends State<RedeemPage> {
     );
   }
 
-  Widget _buildDiscountPreview() {
+  Widget _buildCashbackPreview() {
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: _amountController,
       builder: (context, value, child) {
         final amountText = value.text;
         final cleanAmount = amountText.replaceAll(',', '').replaceAll(' ', '');
         final amount = double.tryParse(cleanAmount) ?? 0;
-        final discount = amount * widget.discountPercent / 100;
-        final final_ = amount - discount;
+        final cashback = amount * widget.cashbackPercent / 100;
 
         if (amount <= 0) return const SizedBox.shrink();
 
@@ -451,18 +450,24 @@ class _RedeemPageState extends State<RedeemPage> {
               _buildPreviewRow('Bill Amount', 'UZS ${_formatNumber(amount)}'),
               const SizedBox(height: 8),
               _buildPreviewRow(
-                'Discount (${widget.discountPercent}%)',
-                '-UZS ${_formatNumber(discount)}',
-                isDiscount: true,
+                'Cashback (${widget.cashbackPercent}%)',
+                '+UZS ${_formatNumber(cashback)}',
+                isCashback: true,
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),
                 child: Divider(height: 1),
               ),
               _buildPreviewRow(
-                'Final Amount',
-                'UZS ${_formatNumber(final_)}',
+                'You Pay',
+                'UZS ${_formatNumber(amount)}',
                 isFinal: true,
+              ),
+              const SizedBox(height: 8),
+              _buildPreviewRow(
+                'Cashback Earned',
+                'UZS ${_formatNumber(cashback)}',
+                isCashback: true,
               ),
             ],
           ),
@@ -474,7 +479,7 @@ class _RedeemPageState extends State<RedeemPage> {
   Widget _buildPreviewRow(
     String label,
     String value, {
-    bool isDiscount = false,
+    bool isCashback = false,
     bool isFinal = false,
   }) {
     return Row(
@@ -490,7 +495,7 @@ class _RedeemPageState extends State<RedeemPage> {
         Text(
           value,
           style: kBodyStyle.copyWith(
-            color: isDiscount
+            color: isCashback
                 ? kSuccess
                 : isFinal
                 ? kTextPrimary
@@ -527,10 +532,10 @@ class _RedeemPageState extends State<RedeemPage> {
           child: const Icon(Icons.check_circle, size: 64, color: kSuccess),
         ),
         const SizedBox(height: 24),
-        Text('Discount Applied!', style: kTitleStyle.copyWith(fontSize: 24)),
+        Text('Cashback Earned!', style: kTitleStyle.copyWith(fontSize: 24)),
         const SizedBox(height: 8),
         Text(
-          'Your discount has been successfully applied',
+          'Your cashback has been successfully applied',
           style: kBodyStyle.copyWith(color: kTextSecondary),
           textAlign: TextAlign.center,
         ),
@@ -545,17 +550,17 @@ class _RedeemPageState extends State<RedeemPage> {
               ),
               const SizedBox(height: 12),
               _buildSummaryRow(
-                'Discount (${widget.discountPercent}%)',
-                '-UZS ${_formatNumber(_discountAmount ?? 0)}',
-                isDiscount: true,
+                'Cashback (${widget.cashbackPercent}%)',
+                '+UZS ${_formatNumber(_cashbackAmount ?? 0)}',
+                isCashback: true,
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
                 child: Divider(height: 1),
               ),
               _buildSummaryRow(
-                'Final Amount',
-                'UZS ${_formatNumber(_finalAmount ?? 0)}',
+                'You Paid',
+                'UZS ${_formatNumber(_originalAmount ?? 0)}',
                 isFinal: true,
               ),
               const SizedBox(height: 16),
@@ -570,12 +575,12 @@ class _RedeemPageState extends State<RedeemPage> {
                 child: Column(
                   children: [
                     Text(
-                      'You Saved',
+                      'Cashback Earned',
                       style: kBodyStyle.copyWith(color: Colors.green),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'UZS ${_formatNumber(_discountAmount ?? 0)}',
+                      'UZS ${_formatNumber(_cashbackAmount ?? 0)}',
                       style: kTitleStyle.copyWith(
                         color: Colors.green,
                         fontSize: 28,
@@ -601,7 +606,7 @@ class _RedeemPageState extends State<RedeemPage> {
   Widget _buildSummaryRow(
     String label,
     String value, {
-    bool isDiscount = false,
+    bool isCashback = false,
     bool isFinal = false,
   }) {
     return Row(
@@ -618,7 +623,7 @@ class _RedeemPageState extends State<RedeemPage> {
           value,
           style: TextStyle(
             fontFamily: '.SF Pro Text',
-            color: isDiscount
+            color: isCashback
                 ? kSuccess
                 : isFinal
                 ? kTextPrimary
