@@ -1,22 +1,49 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../data/repositories/wallet_repository.dart';
 import 'cashback_state.dart';
 
 /// Cubit managing the cashback wallet balance and operations.
 class CashbackCubit extends Cubit<CashbackState> {
-  CashbackCubit() : super(const CashbackState());
+  final WalletRepository _walletRepository;
+
+  CashbackCubit({WalletRepository? walletRepository})
+    : _walletRepository = walletRepository ?? WalletRepository(),
+      super(const CashbackState());
+
+  /// Safe emit that checks if the cubit is still open.
+  void _safeEmit(CashbackState newState) {
+    if (!isClosed) emit(newState);
+  }
 
   /// Load the current cashback balance from the backend.
   Future<void> loadBalance() async {
-    emit(state.copyWith(isLoading: true, errorMessage: null));
+    _safeEmit(state.copyWith(isLoading: true, errorMessage: null));
 
     try {
-      // TODO: Replace with real API call
-      await Future.delayed(const Duration(milliseconds: 500));
-      final mockBalance = state.balance; // Persist current balance for now
+      final result = await _walletRepository.getWallet();
+      if (isClosed) return;
 
-      emit(state.copyWith(balance: mockBalance, isLoading: false));
+      if (result.success && result.data != null) {
+        final wallet = result.data!;
+        _safeEmit(
+          state.copyWith(
+            balance: wallet.balance,
+            currency: wallet.currency,
+            totalEarned: wallet.totalEarned,
+            totalTransferred: wallet.totalTransferred,
+            isLoading: false,
+          ),
+        );
+      } else {
+        _safeEmit(
+          state.copyWith(
+            isLoading: false,
+            errorMessage: result.error ?? 'Failed to load balance',
+          ),
+        );
+      }
     } catch (e) {
-      emit(
+      _safeEmit(
         state.copyWith(
           isLoading: false,
           errorMessage: 'Failed to load balance: $e',
@@ -25,10 +52,10 @@ class CashbackCubit extends Cubit<CashbackState> {
     }
   }
 
-  /// Add cashback to the wallet balance.
+  /// Add cashback to the wallet balance (local update after successful API call).
   void addCashback(double amount) {
     final newBalance = state.balance + amount;
-    emit(
+    _safeEmit(
       state.copyWith(
         balance: newBalance,
         lastAddedAmount: amount,
@@ -37,23 +64,45 @@ class CashbackCubit extends Cubit<CashbackState> {
     );
   }
 
+  /// Update balance from a new wallet balance value (e.g., after receipt verify).
+  void updateBalance(double newBalance) {
+    _safeEmit(state.copyWith(balance: newBalance, errorMessage: null));
+  }
+
   /// Transfer the entire wallet balance to the user's card.
-  Future<void> transferToCard() async {
+  Future<void> transferToCard({String cardLastFour = '0000'}) async {
     if (state.balance <= 0) {
-      emit(state.copyWith(errorMessage: 'No balance to transfer'));
+      _safeEmit(state.copyWith(errorMessage: 'No balance to transfer'));
       return;
     }
 
-    emit(state.copyWith(isLoading: true, errorMessage: null));
+    _safeEmit(state.copyWith(isLoading: true, errorMessage: null));
 
     try {
-      // TODO: Replace with real API call
-      await Future.delayed(const Duration(seconds: 1));
+      final result = await _walletRepository.transferToCard(
+        amount: state.balance,
+        cardLastFour: cardLastFour,
+      );
+      if (isClosed) return;
 
-      // Mock: simulate success
-      emit(state.copyWith(balance: 0, isLoading: false, lastAddedAmount: 0));
+      if (result.success && result.data != null) {
+        _safeEmit(
+          state.copyWith(
+            balance: result.data!.newBalance,
+            isLoading: false,
+            lastAddedAmount: 0,
+          ),
+        );
+      } else {
+        _safeEmit(
+          state.copyWith(
+            isLoading: false,
+            errorMessage: result.error ?? 'Transfer failed',
+          ),
+        );
+      }
     } catch (e) {
-      emit(
+      _safeEmit(
         state.copyWith(isLoading: false, errorMessage: 'Transfer failed: $e'),
       );
     }

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../api_client.dart';
 import '../models/restaurant.dart';
+import '../models/tag_model.dart';
 
 /// Result for restaurants list.
 class RestaurantsListResult {
@@ -135,6 +136,9 @@ class RestaurantsRepository {
   }
 
   /// Get list of available filter tags.
+  /// Returns structured tags from `GET /v1/tags`.
+  List<RestaurantTag> _cachedTagObjects = [];
+
   Future<List<String>> getFilterTags() async {
     if (kEnableMockData) {
       await Future.delayed(const Duration(milliseconds: 500));
@@ -155,10 +159,28 @@ class RestaurantsRepository {
     }
 
     try {
-      final response = await _client.get('/restaurants/tags/');
+      final response = await _client.get('/v1/tags');
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data ?? [];
-        return data.map((t) => t.toString()).toList();
+        final body = response.data;
+        List<dynamic> tagList;
+
+        // Unwrap {success, data} response format
+        if (body is Map<String, dynamic> &&
+            body['success'] == true &&
+            body['data'] is List) {
+          tagList = body['data'] as List<dynamic>;
+        } else if (body is List) {
+          tagList = body;
+        } else {
+          return [];
+        }
+
+        _cachedTagObjects = tagList
+            .whereType<Map<String, dynamic>>()
+            .map((t) => RestaurantTag.fromJson(t))
+            .toList();
+
+        return _cachedTagObjects.map((t) => t.name).toList();
       }
       return [];
     } catch (e) {
@@ -166,7 +188,11 @@ class RestaurantsRepository {
     }
   }
 
+  /// Get the cached structured tag objects.
+  List<RestaurantTag> get cachedTagObjects => _cachedTagObjects;
+
   /// Get list of all restaurants.
+  /// Uses `GET /v1/restaurants` with `{success, data}` wrapper.
   Future<RestaurantsListResult> getRestaurants() async {
     if (kEnableMockData) {
       return RestaurantsListResult(
@@ -176,22 +202,13 @@ class RestaurantsRepository {
     }
 
     try {
-      final response = await _client.get('/restaurants/');
+      final response = await _client.get('/v1/restaurants');
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data ?? [];
-        final restaurants = data
-            .map((json) => Restaurant.fromJson(json as Map<String, dynamic>))
-            .toList();
-
-        return RestaurantsListResult(success: true, restaurants: restaurants);
-      }
-
-      if (kEnableMockData) {
-        return RestaurantsListResult(
-          success: true,
-          restaurants: _getMockRestaurants(),
-        );
+        final restaurants = _parseRestaurantsResponse(response.data);
+        if (restaurants != null) {
+          return RestaurantsListResult(success: true, restaurants: restaurants);
+        }
       }
 
       return RestaurantsListResult(
@@ -209,6 +226,7 @@ class RestaurantsRepository {
   }
 
   /// Get nearby restaurants based on location.
+  /// Uses `GET /v1/restaurants` with query params.
   Future<RestaurantsListResult> getNearbyRestaurants({
     required double latitude,
     required double longitude,
@@ -232,24 +250,15 @@ class RestaurantsRepository {
       }
 
       final response = await _client.get(
-        '/restaurants/',
+        '/v1/restaurants',
         queryParameters: queryParams,
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data ?? [];
-        final restaurants = data
-            .map((json) => Restaurant.fromJson(json as Map<String, dynamic>))
-            .toList();
-
-        return RestaurantsListResult(success: true, restaurants: restaurants);
-      }
-
-      if (kEnableMockData) {
-        return RestaurantsListResult(
-          success: true,
-          restaurants: _getMockRestaurants(),
-        );
+        final restaurants = _parseRestaurantsResponse(response.data);
+        if (restaurants != null) {
+          return RestaurantsListResult(success: true, restaurants: restaurants);
+        }
       }
 
       return RestaurantsListResult(
@@ -267,6 +276,7 @@ class RestaurantsRepository {
   }
 
   /// Get restaurant detail by ID.
+  /// Uses `GET /v1/restaurants/$id`.
   Future<RestaurantDetailResult> getRestaurantDetail(String id) async {
     if (kEnableMockData && id.startsWith('mock_')) {
       final mock = _getMockRestaurants().firstWhere(
@@ -277,13 +287,27 @@ class RestaurantsRepository {
     }
 
     try {
-      final response = await _client.get('/restaurants/$id/');
+      final response = await _client.get('/v1/restaurants/$id');
 
       if (response.statusCode == 200) {
-        final restaurant = Restaurant.fromJson(
-          response.data as Map<String, dynamic>,
-        );
+        final body = response.data;
+        Map<String, dynamic> restaurantJson;
 
+        // Unwrap {success, data} format
+        if (body is Map<String, dynamic> &&
+            body['success'] == true &&
+            body['data'] is Map<String, dynamic>) {
+          restaurantJson = body['data'] as Map<String, dynamic>;
+        } else if (body is Map<String, dynamic>) {
+          restaurantJson = body;
+        } else {
+          return RestaurantDetailResult(
+            success: false,
+            error: 'Invalid response format',
+          );
+        }
+
+        final restaurant = Restaurant.fromJson(restaurantJson);
         return RestaurantDetailResult(success: true, restaurant: restaurant);
       }
 
@@ -299,6 +323,26 @@ class RestaurantsRepository {
         error: 'An unexpected error occurred: $e',
       );
     }
+  }
+
+  /// Parse restaurants list from either `{success, data: [...]}` or raw `[...]`.
+  List<Restaurant>? _parseRestaurantsResponse(dynamic responseData) {
+    List<dynamic> list;
+
+    if (responseData is Map<String, dynamic> &&
+        responseData['success'] == true &&
+        responseData['data'] is List) {
+      list = responseData['data'] as List<dynamic>;
+    } else if (responseData is List) {
+      list = responseData;
+    } else {
+      return null;
+    }
+
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map((json) => Restaurant.fromJson(json))
+        .toList();
   }
 
   RestaurantsListResult _handleDioError(DioException e) {

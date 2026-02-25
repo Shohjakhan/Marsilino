@@ -1,29 +1,5 @@
 import 'package:equatable/equatable.dart';
-
-/// Parsed receipt data from a QR code scan.
-class ReceiptModel extends Equatable {
-  /// Total amount paid on the receipt.
-  final double totalAmount;
-
-  /// Restaurant name from the receipt.
-  final String restaurantName;
-
-  /// Receipt number / fiscal ID.
-  final String receiptNumber;
-
-  /// Date of the transaction.
-  final DateTime date;
-
-  const ReceiptModel({
-    required this.totalAmount,
-    required this.restaurantName,
-    required this.receiptNumber,
-    required this.date,
-  });
-
-  @override
-  List<Object?> get props => [totalAmount, restaurantName, receiptNumber, date];
-}
+import '../../data/models/receipt_model.dart';
 
 /// Immutable state for the QR scan feature.
 class QrState extends Equatable {

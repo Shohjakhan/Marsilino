@@ -1,21 +1,31 @@
+import 'package:equatable/equatable.dart';
 import '../../data/models/restaurant.dart';
 
 /// Restaurants state.
-sealed class RestaurantsState {}
+sealed class RestaurantsState extends Equatable {
+  const RestaurantsState();
+
+  @override
+  List<Object?> get props => [];
+}
 
 /// Initial state - no data loaded yet.
-class RestaurantsInitial extends RestaurantsState {}
+class RestaurantsInitial extends RestaurantsState {
+  const RestaurantsInitial();
+}
 
 /// Loading state.
 class RestaurantsLoading extends RestaurantsState {
-  /// If true, showing cached data while refreshing.
   final List<Restaurant> cachedRestaurants;
   final bool isRefreshing;
 
-  RestaurantsLoading({
+  const RestaurantsLoading({
     this.cachedRestaurants = const [],
     this.isRefreshing = false,
   });
+
+  @override
+  List<Object?> get props => [cachedRestaurants, isRefreshing];
 }
 
 /// Restaurants loaded successfully.
@@ -28,15 +38,15 @@ class RestaurantsLoaded extends RestaurantsState {
   final List<String> availableTags;
   final String? currentLocationName;
 
-  RestaurantsLoaded({
+  const RestaurantsLoaded({
     required this.restaurants,
     required this.filteredRestaurants,
     this.searchQuery = '',
     this.activeFilters = const {},
     this.hasMore = false,
-    List<String>? availableTags,
+    this.availableTags = const [],
     this.currentLocationName,
-  }) : availableTags = availableTags ?? const [];
+  });
 
   RestaurantsLoaded copyWith({
     List<Restaurant>? restaurants,
@@ -57,6 +67,17 @@ class RestaurantsLoaded extends RestaurantsState {
       currentLocationName: currentLocationName ?? this.currentLocationName,
     );
   }
+
+  @override
+  List<Object?> get props => [
+    restaurants,
+    filteredRestaurants,
+    searchQuery,
+    activeFilters,
+    hasMore,
+    availableTags,
+    currentLocationName,
+  ];
 }
 
 /// Error state with retry capability.
@@ -64,5 +85,11 @@ class RestaurantsError extends RestaurantsState {
   final String message;
   final List<Restaurant> cachedRestaurants;
 
-  RestaurantsError({required this.message, this.cachedRestaurants = const []});
+  const RestaurantsError({
+    required this.message,
+    this.cachedRestaurants = const [],
+  });
+
+  @override
+  List<Object?> get props => [message, cachedRestaurants];
 }

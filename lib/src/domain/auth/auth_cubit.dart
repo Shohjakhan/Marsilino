@@ -15,25 +15,24 @@ class AuthCubit extends Cubit<AuthState> {
   AuthCubit({AuthRepository? authRepository, TokenStorage? tokenStorage})
     : _authRepository = authRepository ?? AuthRepository(),
       _tokenStorage = tokenStorage ?? TokenStorage.instance,
-      super(AuthInitial());
+      super(const AuthInitial());
 
   /// Request OTP for phone number.
   Future<void> requestOtp(String phoneNumber) async {
-    emit(AuthLoading());
+    emit(const AuthLoading());
 
     try {
       await _authRepository.requestOtp(phoneNumber);
       emit(AuthOtpRequested(phoneNumber: phoneNumber));
     } catch (e) {
       final message = e.toString().replaceFirst('Exception: ', '');
-      print('[AuthCubit] requestOtp error: $message');
       emit(AuthFailure(message: message));
     }
   }
 
   /// Verify OTP and handle authentication.
   Future<void> verifyOtp(String phoneNumber, String code) async {
-    emit(AuthLoading());
+    emit(const AuthLoading());
 
     try {
       final result = await _authRepository.verifyOtp(phoneNumber, code);
@@ -50,7 +49,6 @@ class AuthCubit extends Cubit<AuthState> {
       }
     } catch (e) {
       final message = e.toString().replaceFirst('Exception: ', '');
-      print('[AuthCubit] verifyOtp error: $message');
       emit(AuthFailure(message: message));
     }
   }
@@ -58,14 +56,13 @@ class AuthCubit extends Cubit<AuthState> {
   /// Check for existing valid token with timeout protection.
   /// Returns AuthUnauthenticated on timeout or error to prevent blocking.
   Future<void> checkExistingToken() async {
-    emit(AuthLoading());
+    emit(const AuthLoading());
 
     try {
       // Use timeout to prevent infinite loading
       final isLoggedIn = await _authRepository.isLoggedIn().timeout(
         _tokenCheckTimeout,
         onTimeout: () {
-          print('[AuthCubit] Token check timed out after $_tokenCheckTimeout');
           return false;
         },
       );
@@ -75,17 +72,16 @@ class AuthCubit extends Cubit<AuthState> {
         final phone = await _tokenStorage.getUserPhone();
         emit(AuthAuthenticated(fullName: fullName, phone: phone));
       } else {
-        emit(AuthUnauthenticated());
+        emit(const AuthUnauthenticated());
       }
     } catch (e) {
-      print('[AuthCubit] checkExistingToken error: $e');
-      emit(AuthUnauthenticated());
+      emit(const AuthUnauthenticated());
     }
   }
 
   /// Complete profile for new user.
   Future<void> completeProfile(String fullName) async {
-    emit(AuthLoading());
+    emit(const AuthLoading());
 
     try {
       final result = await _authRepository.updateProfile(fullName: fullName);
@@ -97,7 +93,6 @@ class AuthCubit extends Cubit<AuthState> {
       }
     } catch (e) {
       final message = e.toString().replaceFirst('Exception: ', '');
-      print('[AuthCubit] completeProfile error: $message');
       emit(AuthFailure(message: message));
     }
   }
@@ -106,15 +101,13 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> logout() async {
     try {
       await _authRepository.logout();
-    } catch (e) {
-      print('[AuthCubit] logout error: $e');
-    }
-    emit(AuthUnauthenticated());
+    } catch (_) {}
+    emit(const AuthUnauthenticated());
   }
 
   /// Reset to initial state (e.g., for retry from failure).
   void reset() {
-    emit(AuthInitial());
+    emit(const AuthInitial());
   }
 
   /// Set authenticated state directly (e.g., after successful profile update).

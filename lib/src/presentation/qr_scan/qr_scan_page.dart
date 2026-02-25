@@ -8,8 +8,21 @@ import '../../theme/app_theme.dart';
 import '../common/primary_button.dart';
 
 /// QR Scan page with camera preview, receipt display, and cashback redemption.
+///
+/// When opened from a restaurant page, pass [restaurantId], [restaurantName],
+/// and [cashbackPercent] so the scanner knows the cashback rate.
+/// When opened from the navbar (standalone), leave these null.
 class QrScanPage extends StatefulWidget {
-  const QrScanPage({super.key});
+  final String? restaurantId;
+  final String? restaurantName;
+  final int? cashbackPercent;
+
+  const QrScanPage({
+    super.key,
+    this.restaurantId,
+    this.restaurantName,
+    this.cashbackPercent,
+  });
 
   @override
   State<QrScanPage> createState() => _QrScanPageState();
@@ -25,7 +38,12 @@ class _QrScanPageState extends State<QrScanPage> {
   void initState() {
     super.initState();
     _cashbackCubit = CashbackCubit();
-    _qrCubit = QrCubit(cashbackCubit: _cashbackCubit);
+    _qrCubit = QrCubit(
+      cashbackCubit: _cashbackCubit,
+      restaurantId: widget.restaurantId,
+      restaurantName: widget.restaurantName,
+      cashbackPercent: widget.cashbackPercent,
+    );
     _scannerController = MobileScannerController(
       detectionSpeed: DetectionSpeed.normal,
       facing: CameraFacing.back,
@@ -70,6 +88,9 @@ class _QrScanPageState extends State<QrScanPage> {
     return buffer.toString();
   }
 
+  /// Whether this page was opened from a restaurant page (vs. navbar).
+  bool get _hasRestaurantContext => widget.restaurantId != null;
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider.value(
@@ -77,11 +98,16 @@ class _QrScanPageState extends State<QrScanPage> {
       child: Scaffold(
         backgroundColor: kBackground,
         appBar: AppBar(
-          title: Text('Scan QR Code', style: kTitleStyle),
+          title: Text(
+            _hasRestaurantContext
+                ? 'Scan Receipt — ${widget.restaurantName}'
+                : 'Scan QR Code',
+            style: kTitleStyle.copyWith(fontSize: 17),
+          ),
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.close, color: kTextPrimary),
+            icon: const Icon(Icons.arrow_back_ios, color: kTextPrimary),
             onPressed: () => Navigator.pop(context),
           ),
         ),
@@ -199,9 +225,22 @@ class _QrScanPageState extends State<QrScanPage> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Scan the fiscal receipt to earn cashback',
+                _hasRestaurantContext
+                    ? 'Scan your ${widget.restaurantName} receipt'
+                    : 'Scan the fiscal receipt to earn cashback',
                 style: kBodyStyle.copyWith(color: kTextSecondary, fontSize: 13),
               ),
+              if (_hasRestaurantContext && widget.cashbackPercent != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Cashback rate: ${widget.cashbackPercent}%',
+                  style: kBodyStyle.copyWith(
+                    color: kPrimaryBold,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -211,7 +250,6 @@ class _QrScanPageState extends State<QrScanPage> {
 
   List<Widget> _buildCornerAccents() {
     return [
-      // We'll use a simpler approach — centered overlay corners
       Positioned.fill(
         child: Center(
           child: SizedBox(
@@ -219,25 +257,21 @@ class _QrScanPageState extends State<QrScanPage> {
             height: 240,
             child: Stack(
               children: [
-                // Top-left
                 Positioned(
                   top: 0,
                   left: 0,
                   child: _cornerPiece(borderTop: true, borderLeft: true),
                 ),
-                // Top-right
                 Positioned(
                   top: 0,
                   right: 0,
                   child: _cornerPiece(borderTop: true, borderRight: true),
                 ),
-                // Bottom-left
                 Positioned(
                   bottom: 0,
                   left: 0,
                   child: _cornerPiece(borderBottom: true, borderLeft: true),
                 ),
-                // Bottom-right
                 Positioned(
                   bottom: 0,
                   right: 0,
@@ -365,7 +399,7 @@ class _QrScanPageState extends State<QrScanPage> {
                 ),
                 _buildReceiptRow(
                   'Date',
-                  '${receipt.date.day}.${receipt.date.month.toString().padLeft(2, '0')}.${receipt.date.year}',
+                  '${receipt.createdAt.day}.${receipt.createdAt.month.toString().padLeft(2, '0')}.${receipt.createdAt.year}',
                   icon: Icons.calendar_today,
                 ),
                 const Padding(
@@ -419,6 +453,17 @@ class _QrScanPageState extends State<QrScanPage> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                if (_hasRestaurantContext &&
+                    widget.cashbackPercent != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '${widget.cashbackPercent}% cashback from ${widget.restaurantName}',
+                    style: kBodyStyle.copyWith(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

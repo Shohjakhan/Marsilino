@@ -1,11 +1,21 @@
+import 'package:equatable/equatable.dart';
+
 /// Like state.
-sealed class LikeState {}
+sealed class LikeState extends Equatable {
+  const LikeState();
+
+  @override
+  List<Object?> get props => [];
+}
 
 /// Initial state - all likes loaded.
 class LikeInitial extends LikeState {
   final Set<String> likedRestaurantIds;
 
-  LikeInitial({this.likedRestaurantIds = const {}});
+  const LikeInitial({this.likedRestaurantIds = const {}});
+
+  @override
+  List<Object?> get props => [likedRestaurantIds];
 }
 
 /// Currently toggling a like.
@@ -13,7 +23,13 @@ class LikeToggling extends LikeState {
   final String restaurantId;
   final Set<String> likedRestaurantIds;
 
-  LikeToggling({required this.restaurantId, required this.likedRestaurantIds});
+  const LikeToggling({
+    required this.restaurantId,
+    required this.likedRestaurantIds,
+  });
+
+  @override
+  List<Object?> get props => [restaurantId, likedRestaurantIds];
 }
 
 /// Like toggle completed.
@@ -22,11 +38,14 @@ class LikeToggled extends LikeState {
   final bool isLiked;
   final Set<String> likedRestaurantIds;
 
-  LikeToggled({
+  const LikeToggled({
     required this.restaurantId,
     required this.isLiked,
     required this.likedRestaurantIds,
   });
+
+  @override
+  List<Object?> get props => [restaurantId, isLiked, likedRestaurantIds];
 }
 
 /// Like operation failed.
@@ -35,9 +54,12 @@ class LikeError extends LikeState {
   final String? restaurantId;
   final Set<String> likedRestaurantIds;
 
-  LikeError({
+  const LikeError({
     required this.message,
     this.restaurantId,
     required this.likedRestaurantIds,
   });
+
+  @override
+  List<Object?> get props => [message, restaurantId, likedRestaurantIds];
 }

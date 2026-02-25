@@ -13,10 +13,24 @@ class UserRepository {
 
   Future<UserModel> getMe() async {
     try {
-      final response = await _client.get('/me/');
+      final response = await _client.get('/v1/me');
       if (response.statusCode == 200) {
-        final user = UserModel.fromJson(response.data);
-        // Update local storage if needed, but primarily return the fresh user
+        final body = response.data;
+        Map<String, dynamic> userData;
+
+        // Unwrap {success, data} format
+        if (body is Map<String, dynamic> &&
+            body['success'] == true &&
+            body['data'] is Map<String, dynamic>) {
+          userData = body['data'] as Map<String, dynamic>;
+        } else if (body is Map<String, dynamic>) {
+          userData = body;
+        } else {
+          throw Exception('Invalid response format');
+        }
+
+        final user = UserModel.fromJson(userData);
+        // Update local storage if needed
         if (user.fullName != null) {
           await _tokenStorage.saveUserInfo(fullName: user.fullName);
         }
@@ -26,7 +40,6 @@ class UserRepository {
       throw Exception('Failed to load user profile');
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
-        // Token might be expired
         throw Exception('Session expired');
       }
       throw Exception('Network error: ${e.message}');
@@ -38,16 +51,33 @@ class UserRepository {
   /// Updates the user's profile with the given [fullName].
   /// Returns the updated [UserModel] on success.
   /// Throws an [Exception] on failure.
-  Future<UserModel> updateProfile({required String fullName}) async {
+  Future<UserModel> updateProfile({String? fullName, String? language}) async {
     try {
-      final response = await _client.patch(
-        '/me/',
-        data: {'full_name': fullName},
-      );
+      final data = <String, dynamic>{};
+      if (fullName != null) data['full_name'] = fullName;
+      if (language != null) data['language'] = language;
+
+      final response = await _client.patch('/v1/me', data: data);
       if (response.statusCode == 200) {
-        final user = UserModel.fromJson(response.data);
+        final body = response.data;
+        Map<String, dynamic> userData;
+
+        // Unwrap {success, data} format
+        if (body is Map<String, dynamic> &&
+            body['success'] == true &&
+            body['data'] is Map<String, dynamic>) {
+          userData = body['data'] as Map<String, dynamic>;
+        } else if (body is Map<String, dynamic>) {
+          userData = body;
+        } else {
+          throw Exception('Invalid response format');
+        }
+
+        final user = UserModel.fromJson(userData);
         // Update local storage
-        await _tokenStorage.saveUserInfo(fullName: user.fullName);
+        if (user.fullName != null) {
+          await _tokenStorage.saveUserInfo(fullName: user.fullName);
+        }
         return user;
       }
       throw Exception('Failed to update profile');

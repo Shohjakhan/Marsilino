@@ -14,12 +14,12 @@ class RestaurantDetailCubit extends Cubit<RestaurantDetailState> {
 
   RestaurantDetailCubit({RestaurantsRepository? repository})
     : _repository = repository ?? RestaurantsRepository(),
-      super(DetailInitial());
+      super(const DetailInitial());
 
   /// Load restaurant detail by ID.
   Future<void> loadDetail(String restaurantId) async {
     _currentRestaurantId = restaurantId;
-    emit(DetailLoading());
+    emit(const DetailLoading());
 
     try {
       // Load detail and like status in parallel
@@ -59,9 +59,6 @@ class RestaurantDetailCubit extends Cubit<RestaurantDetailState> {
         );
       }
     } on TimeoutException {
-      print(
-        '[RestaurantDetailCubit] Network timeout for restaurant $restaurantId',
-      );
       emit(
         DetailError(
           message: 'Network timeout. Please check your connection.',
@@ -69,7 +66,6 @@ class RestaurantDetailCubit extends Cubit<RestaurantDetailState> {
         ),
       );
     } catch (e) {
-      print('[RestaurantDetailCubit] loadDetail error: $e');
       emit(
         DetailError(
           message: 'Failed to load details: ${e.toString()}',
@@ -108,12 +104,10 @@ class RestaurantDetailCubit extends Cubit<RestaurantDetailState> {
         return true;
       } else {
         // Failed - revert
-        print('[RestaurantDetailCubit] Like toggle failed: ${result.error}');
         emit(latestState.copyWith(isLiked: wasLiked, isLikeToggling: false));
         return false;
       }
     } catch (e) {
-      print('[RestaurantDetailCubit] toggleLike error: $e');
       // Revert on error
       final latestState = state;
       if (latestState is DetailLoaded && _currentRestaurantId == restaurantId) {

@@ -15,4 +15,10 @@ class AppConfig {
 
   /// Enable debug logging.
   static const bool debugMode = true;
+
+  // ── Feature Flags ──────────────────────────────────────────────
+
+  /// Enable table booking feature across the app.
+  /// Set to `true` when the booking backend is ready.
+  static const bool enableBookings = false;
 }

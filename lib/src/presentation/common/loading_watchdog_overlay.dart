@@ -52,7 +52,6 @@ class _LoadingWatchdogOverlayState extends State<LoadingWatchdogOverlay> {
       _stuckCubit = event.cubitName;
       _elapsed = event.elapsed;
     });
-    print('[LoadingWatchdogOverlay] Showing overlay for: ${event.cubitName}');
   }
 
   void _handleRetry() {
@@ -66,12 +65,6 @@ class _LoadingWatchdogOverlayState extends State<LoadingWatchdogOverlay> {
   }
 
   void _handleReport() {
-    print('=== LOADING WATCHDOG REPORT ===');
-    print('Stuck Cubit: $_stuckCubit');
-    print('Elapsed Time: ${_elapsed?.inSeconds}s');
-    print('Timestamp: ${DateTime.now().toIso8601String()}');
-    print('===============================');
-
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Report logged to console'),

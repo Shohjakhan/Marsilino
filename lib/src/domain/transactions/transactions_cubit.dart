@@ -15,7 +15,7 @@ class TransactionsCubit extends Cubit<TransactionsState> {
 
   TransactionsCubit({TransactionsRepository? repository})
     : _repository = repository ?? TransactionsRepository(),
-      super(TransactionsInitial());
+      super(const TransactionsInitial());
 
   /// Load transactions (shows cache while loading if available).
   Future<void> loadTransactions() async {
@@ -28,7 +28,7 @@ class TransactionsCubit extends Cubit<TransactionsState> {
         ),
       );
     } else {
-      emit(TransactionsLoading());
+      emit(const TransactionsLoading());
     }
 
     await _fetchTransactions();
@@ -52,7 +52,6 @@ class TransactionsCubit extends Cubit<TransactionsState> {
       final result = await _repository.getTransactions().timeout(
         _networkTimeout,
         onTimeout: () {
-          print('[TransactionsCubit] Network timeout after $_networkTimeout');
           throw TimeoutException('Network request timed out');
         },
       );
@@ -78,7 +77,6 @@ class TransactionsCubit extends Cubit<TransactionsState> {
         ),
       );
     } catch (e) {
-      print('[TransactionsCubit] loadTransactions error: $e');
       emit(
         TransactionsError(
           message: 'Failed to load transactions: ${e.toString()}',

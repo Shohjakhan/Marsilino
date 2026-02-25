@@ -11,7 +11,7 @@ class LikeCubit extends Cubit<LikeState> {
 
   LikeCubit({RestaurantsRepository? repository})
     : _repository = repository ?? RestaurantsRepository(),
-      super(LikeInitial());
+      super(const LikeInitial());
 
   /// Load initial liked restaurant IDs.
   Future<void> loadLikedIds() async {
@@ -21,8 +21,7 @@ class LikeCubit extends Cubit<LikeState> {
         _likedIds = Set.from(result.ids);
         emit(LikeInitial(likedRestaurantIds: _likedIds));
       }
-    } catch (e) {
-      print('[LikeCubit] loadLikedIds error: $e');
+    } catch (_) {
       // Keep existing state on error
     }
   }
@@ -70,7 +69,6 @@ class LikeCubit extends Cubit<LikeState> {
         return false;
       }
     } catch (e) {
-      print('[LikeCubit] addLike error: $e');
       // Revert on error
       _likedIds = Set.from(_likedIds)..remove(restaurantId);
       emit(
@@ -119,7 +117,6 @@ class LikeCubit extends Cubit<LikeState> {
         return false;
       }
     } catch (e) {
-      print('[LikeCubit] removeLike error: $e');
       // Revert on error
       _likedIds = Set.from(_likedIds)..add(restaurantId);
       emit(

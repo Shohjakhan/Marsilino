@@ -29,14 +29,10 @@ class LoadingWatchdog {
     _currentCubit = cubitName;
     _loadingStartTime = DateTime.now();
 
-    print('[LoadingWatchdog] Started watching: $cubitName');
-
     _timer?.cancel();
     _timer = Timer(timeout, () {
       final elapsed = DateTime.now().difference(_loadingStartTime!);
-      print(
-        '[LoadingWatchdog] ⚠️ TIMEOUT: $cubitName has been loading for ${elapsed.inSeconds}s',
-      );
+
       onTimeout?.call(cubitName, elapsed);
     });
   }
@@ -46,12 +42,6 @@ class LoadingWatchdog {
     if (!enabled) return;
 
     if (_currentCubit == cubitName) {
-      final elapsed = _loadingStartTime != null
-          ? DateTime.now().difference(_loadingStartTime!)
-          : Duration.zero;
-      print(
-        '[LoadingWatchdog] Stopped watching: $cubitName (took ${elapsed.inMilliseconds}ms)',
-      );
       _reset();
     }
   }

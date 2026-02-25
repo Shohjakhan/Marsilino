@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/restaurant.dart';
 import '../../data/repositories/restaurants_repository.dart';
@@ -19,7 +19,7 @@ class RestaurantsCubit extends Cubit<RestaurantsState> {
 
   RestaurantsCubit({RestaurantsRepository? repository})
     : _repository = repository ?? RestaurantsRepository(),
-      super(RestaurantsInitial());
+      super(const RestaurantsInitial());
 
   /// Load restaurants with optional force refresh.
   Future<void> loadRestaurants({bool forceRefresh = false}) async {
@@ -32,16 +32,13 @@ class RestaurantsCubit extends Cubit<RestaurantsState> {
         ),
       );
     } else {
-      emit(RestaurantsLoading());
+      emit(const RestaurantsLoading());
     }
 
     try {
       final result = await _repository.getRestaurants().timeout(
         _networkTimeout,
         onTimeout: () {
-          debugPrint(
-            '[RestaurantsCubit] Network timeout after $_networkTimeout',
-          );
           throw TimeoutException('Network request timed out');
         },
       );
@@ -66,7 +63,6 @@ class RestaurantsCubit extends Cubit<RestaurantsState> {
         ),
       );
     } catch (e) {
-      debugPrint('[RestaurantsCubit] loadRestaurants error: $e');
       emit(
         RestaurantsError(
           message: 'Failed to load restaurants: ${e.toString()}',
@@ -105,10 +101,6 @@ class RestaurantsCubit extends Cubit<RestaurantsState> {
     if (currentState is! RestaurantsLoaded || !currentState.hasMore) return;
 
     // TODO: Implement pagination when API supports it
-    // For now, this is a placeholder
-    debugPrint(
-      '[RestaurantsCubit] loadMore called - pagination not yet implemented',
-    );
   }
 
   /// Apply current search and filters and emit loaded state.

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../config/app_config.dart';
+import 'repositories/token_storage.dart';
 
 /// HTTP client wrapper using Dio.
 class ApiClient {
@@ -24,6 +25,56 @@ class ApiClient {
       _dio.interceptors.add(
         LogInterceptor(requestBody: true, responseBody: true, error: true),
       );
+    }
+
+    // Add token refresh interceptor
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onError: (error, handler) async {
+          if (error.response?.statusCode == 401) {
+            // Attempt to refresh token
+            final refreshed = await _tryRefreshToken();
+            if (refreshed) {
+              // Retry the original request with the new token
+              final token = await TokenStorage.instance.getAccessToken();
+              if (token != null) {
+                error.requestOptions.headers['Authorization'] = 'Bearer $token';
+                try {
+                  final response = await _dio.fetch(error.requestOptions);
+                  return handler.resolve(response);
+                } catch (e) {
+                  return handler.next(error);
+                }
+              }
+            }
+          }
+          return handler.next(error);
+        },
+      ),
+    );
+  }
+
+  /// Attempt to refresh the access token using the stored refresh token.
+  Future<bool> _tryRefreshToken() async {
+    try {
+      final refreshToken = await TokenStorage.instance.getRefreshToken();
+      if (refreshToken == null) return false;
+
+      final response = await Dio(
+        BaseOptions(baseUrl: AppConfig.apiUrl),
+      ).post('/token/refresh/', data: {'refresh': refreshToken});
+
+      if (response.statusCode == 200) {
+        final newAccessToken = response.data?['access'] as String?;
+        if (newAccessToken != null) {
+          await TokenStorage.instance.saveAccessToken(newAccessToken);
+          setAuthToken(newAccessToken);
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      return false;
     }
   }
 

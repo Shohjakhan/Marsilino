@@ -136,6 +136,32 @@ class AuthRepository {
     _client.clearAuthToken();
   }
 
+  /// Refresh the access token using the stored refresh token.
+  /// Returns true if successful, false otherwise.
+  Future<bool> refreshToken() async {
+    try {
+      final refreshToken = await _tokenStorage.getRefreshToken();
+      if (refreshToken == null) return false;
+
+      final response = await _client.post(
+        '/token/refresh/',
+        data: {'refresh': refreshToken},
+      );
+
+      if (response.statusCode == 200) {
+        final newAccessToken = response.data?['access'] as String?;
+        if (newAccessToken != null) {
+          await _tokenStorage.saveAccessToken(newAccessToken);
+          _client.setAuthToken(newAccessToken);
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// Check if user is logged in.
   Future<bool> isLoggedIn() async {
     final isLogged = await _tokenStorage.isLoggedIn();
@@ -165,14 +191,26 @@ class AuthRepository {
         final statusCode = e.response?.statusCode;
         final data = e.response?.data;
 
-        if (statusCode == 429) {
-          // Rate limited
-          errorMessage = data?['error'] ?? 'Too many requests. Please wait.';
-        } else if (statusCode == 400) {
-          errorMessage =
-              data?['error'] ?? data?['phone_number']?[0] ?? 'Invalid request';
+        if (data is Map<String, dynamic>) {
+          if (statusCode == 429) {
+            // Rate limited
+            errorMessage =
+                data['error']?.toString() ?? 'Too many requests. Please wait.';
+          } else if (statusCode == 400) {
+            final phoneErr = data['phone_number'];
+            errorMessage =
+                data['error']?.toString() ??
+                (phoneErr is List
+                    ? phoneErr.first.toString()
+                    : 'Invalid request');
+          } else {
+            errorMessage =
+                data['error']?.toString() ?? 'Server error ($statusCode)';
+          }
+        } else if (data is String) {
+          errorMessage = data;
         } else {
-          errorMessage = data?['error'] ?? 'Server error ($statusCode)';
+          errorMessage = 'Server error ($statusCode)';
         }
         break;
       default:

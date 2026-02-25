@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:restaurant/l10n/gen/app_localizations.dart';
+import '../../config/app_config.dart';
 import '../../data/models/restaurant.dart' as api;
 import '../../data/repositories/restaurants_repository.dart';
 import '../../theme/app_theme.dart';
@@ -7,7 +8,7 @@ import '../common/gallery_carousel.dart';
 import '../common/primary_button.dart';
 import '../common/rounded_card.dart';
 import 'booking_section.dart';
-import 'redeem_page.dart';
+import '../qr_scan/qr_scan_page.dart';
 import '../common/navigation_notifications.dart';
 
 /// Restaurant data model for the landing page.
@@ -247,10 +248,9 @@ class _RestaurantPageState extends State<RestaurantPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => RedeemPage(
+        builder: (context) => QrScanPage(
           restaurantId: widget.restaurantId!,
           restaurantName: _data!.name,
-          logoUrl: _data!.logoUrl,
           cashbackPercent: _data!.cashbackPercent,
         ),
       ),
@@ -333,19 +333,20 @@ class _RestaurantPageState extends State<RestaurantPage> {
               // Menu
               if (_data!.menuImageUrl != null)
                 SliverToBoxAdapter(child: _buildMenuCard()),
-              // Booking
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: BookingSection(
-                    restaurantName: _data!.name,
-                    restaurantId: widget.restaurantId!,
-                    bookingAvailable: _data!.bookingAvailable,
-                    maxPeople: _data!.maxPeople,
-                    availableTimes: _data!.availableTimes,
+              // Booking (behind feature flag)
+              if (AppConfig.enableBookings)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: BookingSection(
+                      restaurantName: _data!.name,
+                      restaurantId: widget.restaurantId!,
+                      bookingAvailable: _data!.bookingAvailable,
+                      maxPeople: _data!.maxPeople,
+                      availableTimes: _data!.availableTimes,
+                    ),
                   ),
                 ),
-              ),
               // Bottom padding for floating button
               const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],

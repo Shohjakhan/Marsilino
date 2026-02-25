@@ -1,3 +1,5 @@
+import 'tag_model.dart';
+
 /// Restaurant model from API.
 class Restaurant {
   final String id;
@@ -11,6 +13,8 @@ class Restaurant {
   final List<dynamic>? menu;
   final String? locationText;
   final double? cashbackPercentage;
+  final String? tin;
+  final List<RestaurantTag> tags;
   final List<String> galleryImages;
   final double? latitude;
   final double? longitude;
@@ -32,6 +36,8 @@ class Restaurant {
     this.menuUrl,
     this.locationText,
     this.cashbackPercentage,
+    this.tin,
+    this.tags = const [],
     this.galleryImages = const [],
     this.latitude,
     this.longitude,
@@ -64,6 +70,16 @@ class Restaurant {
       menuUrl = json['menu'] as String;
     }
 
+    // Parse tags (structured objects from new API)
+    List<RestaurantTag> parsedTags = [];
+    final rawTags = json['tags'];
+    if (rawTags is List) {
+      parsedTags = rawTags
+          .whereType<Map<String, dynamic>>()
+          .map((t) => RestaurantTag.fromJson(t))
+          .toList();
+    }
+
     return Restaurant(
       id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
@@ -74,11 +90,15 @@ class Restaurant {
       contactInformation: json['contact_information'] as String?,
       socialMedia: json['social_media'] is Map
           ? json['social_media'] as Map<String, dynamic>
-          : null, // Handle if string or null
+          : null,
       menu: menuList,
       menuUrl: menuUrl,
       locationText: json['location_text'] as String?,
-      cashbackPercentage: _parseDouble(json['discount_percentage']),
+      cashbackPercentage:
+          _parseDouble(json['cashback_percentage']) ??
+          _parseDouble(json['discount_percentage']),
+      tin: json['tin'] as String?,
+      tags: parsedTags,
       galleryImages: gallery,
       latitude: _parseDouble(json['latitude']),
       longitude: _parseDouble(json['longitude']),
@@ -100,6 +120,10 @@ class Restaurant {
 
   /// Get hashtags as list.
   List<String> get tagsList {
+    // Prefer structured tags from new API, fallback to hashtags string
+    if (tags.isNotEmpty) {
+      return tags.map((t) => t.name).toList();
+    }
     if (hashtags == null || hashtags!.isEmpty) return [];
     return hashtags!
         .split(',')

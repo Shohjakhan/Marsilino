@@ -1,13 +1,23 @@
+import 'package:equatable/equatable.dart';
 import '../../data/models/restaurant.dart';
 
 /// Restaurant detail state.
-sealed class RestaurantDetailState {}
+sealed class RestaurantDetailState extends Equatable {
+  const RestaurantDetailState();
+
+  @override
+  List<Object?> get props => [];
+}
 
 /// Initial state - no detail loaded.
-class DetailInitial extends RestaurantDetailState {}
+class DetailInitial extends RestaurantDetailState {
+  const DetailInitial();
+}
 
 /// Loading detail.
-class DetailLoading extends RestaurantDetailState {}
+class DetailLoading extends RestaurantDetailState {
+  const DetailLoading();
+}
 
 /// Detail loaded successfully.
 class DetailLoaded extends RestaurantDetailState {
@@ -15,7 +25,7 @@ class DetailLoaded extends RestaurantDetailState {
   final bool isLiked;
   final bool isLikeToggling;
 
-  DetailLoaded({
+  const DetailLoaded({
     required this.restaurant,
     this.isLiked = false,
     this.isLikeToggling = false,
@@ -32,6 +42,9 @@ class DetailLoaded extends RestaurantDetailState {
       isLikeToggling: isLikeToggling ?? this.isLikeToggling,
     );
   }
+
+  @override
+  List<Object?> get props => [restaurant, isLiked, isLikeToggling];
 }
 
 /// Error loading detail.
@@ -39,5 +52,8 @@ class DetailError extends RestaurantDetailState {
   final String message;
   final String? restaurantId;
 
-  DetailError({required this.message, this.restaurantId});
+  const DetailError({required this.message, this.restaurantId});
+
+  @override
+  List<Object?> get props => [message, restaurantId];
 }
