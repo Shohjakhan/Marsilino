@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../data/models/restaurant.dart';
 import '../../theme/app_theme.dart';
 import '../restaurant_page/restaurant_page.dart';
 
@@ -35,25 +36,22 @@ class RestaurantCardData {
     this.longitude,
   });
 
-  /// Convert to full RestaurantData for the landing page.
-  RestaurantData toRestaurantData() {
-    return RestaurantData(
+  /// Convert to a Restaurant model for the landing page.
+  Restaurant toRestaurant() {
+    return Restaurant(
+      id: '',
       name: name,
+      logo: logoUrl,
       description:
           'A wonderful restaurant serving delicious food in a welcoming atmosphere. Visit us to experience great cuisine and excellent service.',
-      address: address,
+      locationText: address,
       workingHours: workingHours,
-      phone: '+998 90 123 45 67',
-      rating: 4.5,
-      tags: tags,
       galleryImages: [
         'https://picsum.photos/seed/${name.hashCode}/800/400',
         'https://picsum.photos/seed/${name.hashCode + 1}/800/400',
         'https://picsum.photos/seed/${name.hashCode + 2}/800/400',
       ],
-      logoUrl: logoUrl,
-      menuImageUrl: 'https://picsum.photos/seed/${name.hashCode}menu/600/800',
-      cashback: cashback,
+      menuUrl: 'https://picsum.photos/seed/${name.hashCode}menu/600/800',
       latitude: latitude,
       longitude: longitude,
     );
@@ -266,7 +264,7 @@ class RestaurantCard extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (context) =>
-            RestaurantPage(initialData: data.toRestaurantData()),
+            RestaurantPage(initialRestaurant: data.toRestaurant()),
       ),
     );
   }

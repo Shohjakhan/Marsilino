@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import '../api_client.dart';
 import '../models/receipt_model.dart';
 import '../models/wallet_model.dart';
+import '../models/wallet_transaction_model.dart';
 
 /// Result wrapper for wallet operations.
 class WalletResult<T> {
@@ -22,6 +23,7 @@ class WalletResult<T> {
 ///
 /// Endpoints:
 /// - `GET /v1/wallet` — Get wallet info
+/// - `GET /v1/wallet/transactions` — Get transaction history (paginated)
 /// - `POST /v1/wallet/add` — Add cashback
 /// - `POST /v1/wallet/transfer` — Transfer to card
 /// - `POST /v1/receipt/verify` — Verify Soliq receipt
@@ -34,7 +36,7 @@ class WalletRepository {
   /// Get current wallet information.
   Future<WalletResult<WalletInfo>> getWallet() async {
     try {
-      final response = await _client.get('/v1/wallet');
+      final response = await _client.get('v1/wallet');
 
       if (response.statusCode == 200) {
         final body = response.data as Map<String, dynamic>;
@@ -61,6 +63,41 @@ class WalletRepository {
     }
   }
 
+  /// Get wallet transaction history (paginated).
+  Future<WalletResult<TransactionsPage>> getTransactions({
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final response = await _client.get(
+        'v1/wallet/transactions',
+        queryParameters: {'page': page, 'limit': limit},
+      );
+
+      if (response.statusCode == 200) {
+        final body = response.data as Map<String, dynamic>;
+        if (body['success'] == true) {
+          final txPage = TransactionsPage.fromJson(body);
+          return WalletResult(success: true, data: txPage);
+        }
+        return WalletResult(
+          success: false,
+          error: body['message'] as String? ?? 'Failed to load transactions',
+          errorCode: body['error_code'] as String?,
+        );
+      }
+
+      return WalletResult(
+        success: false,
+        error: 'Failed to load transactions (${response.statusCode})',
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return WalletResult(success: false, error: 'Unexpected error: $e');
+    }
+  }
+
   /// Add cashback to wallet after receipt verification.
   Future<WalletResult<CashbackAddResult>> addCashback({
     required String receiptId,
@@ -71,7 +108,7 @@ class WalletRepository {
   }) async {
     try {
       final response = await _client.post(
-        '/v1/wallet/add',
+        'v1/wallet/add',
         data: {
           'receipt_id': receiptId,
           'total_paid': totalPaid,
@@ -92,7 +129,7 @@ class WalletRepository {
         return WalletResult(
           success: false,
           error: body['message'] as String? ?? 'Failed to add cashback',
-          errorCode: body['error'] as String?,
+          errorCode: body['error_code'] as String?,
         );
       }
 
@@ -114,7 +151,7 @@ class WalletRepository {
   }) async {
     try {
       final response = await _client.post(
-        '/v1/wallet/transfer',
+        'v1/wallet/transfer',
         data: {'amount': amount, 'card_last_four': cardLastFour},
       );
 
@@ -155,7 +192,7 @@ class WalletRepository {
         data['restaurant_id'] = restaurantId;
       }
 
-      final response = await _client.post('/v1/receipt/verify', data: data);
+      final response = await _client.post('v1/receipt/verify/', data: data);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final body = response.data as Map<String, dynamic>;
@@ -189,7 +226,7 @@ class WalletRepository {
 
     if (e.response?.data is Map) {
       final data = e.response!.data as Map;
-      errorCode = data['error']?.toString();
+      errorCode = data['error_code']?.toString();
     }
 
     return WalletResult(

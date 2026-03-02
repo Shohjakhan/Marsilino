@@ -5,7 +5,7 @@ class AppConfig {
   static const String apiBaseUrl = 'https://marsilino.onrender.com';
 
   /// API version prefix.
-  static const String apiPrefix = '/api';
+  static const String apiPrefix = '/api/';
 
   /// Full API base URL.
   static String get apiUrl => '$apiBaseUrl$apiPrefix';

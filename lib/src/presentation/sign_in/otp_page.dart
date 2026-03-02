@@ -14,11 +14,10 @@ class OtpPage extends StatefulWidget {
   /// Phone number that the code was sent to.
   final String phoneNumber;
 
-  const OtpPage({
-    super.key,
-    required this.phoneNumber,
-    required String fullName,
-  });
+  /// Full name collected on Sign Up page (empty string for Sign In).
+  final String fullName;
+
+  const OtpPage({super.key, required this.phoneNumber, required this.fullName});
 
   @override
   State<OtpPage> createState() => _OtpPageState();
@@ -102,7 +101,11 @@ class _OtpPageState extends State<OtpPage> {
       );
       return;
     }
-    context.read<AuthCubit>().verifyOtp(widget.phoneNumber, otp);
+    context.read<AuthCubit>().verifyOtp(
+      widget.phoneNumber,
+      otp,
+      fullName: widget.fullName,
+    );
   }
 
   void _showNameEntryDialog() {
@@ -236,23 +239,10 @@ class _OtpPageState extends State<OtpPage> {
                       ],
                     )
                   else
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(kPrimary),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          l10n.waitingTelegram,
-                          style: kBodyStyle.copyWith(color: kTextSecondary),
-                        ),
-                      ],
+                    Text(
+                      l10n.waitingTelegram,
+                      style: kBodyStyle.copyWith(color: kTextSecondary),
+                      textAlign: TextAlign.center,
                     ),
                   const SizedBox(height: 40),
                   _buildResendSection(l10n),

@@ -103,22 +103,7 @@ class _HomePageState extends State<HomePage> {
       MaterialPageRoute(
         builder: (context) => RestaurantPage(
           restaurantId: restaurant.id,
-          initialData: RestaurantData(
-            name: restaurant.name,
-            description: restaurant.description ?? '',
-            address: restaurant.locationText ?? '',
-            workingHours: restaurant.workingHours ?? '',
-            phone: restaurant.phone ?? '',
-            rating: 4.5,
-            tags: restaurant.tagsList,
-            galleryImages: restaurant.galleryImages,
-            logoUrl: restaurant.logo,
-            cashback: restaurant.cashbackText,
-            instagram: restaurant.instagram,
-            telegram: restaurant.telegram,
-            latitude: restaurant.latitude,
-            longitude: restaurant.longitude,
-          ),
+          initialRestaurant: restaurant,
         ),
       ),
     );

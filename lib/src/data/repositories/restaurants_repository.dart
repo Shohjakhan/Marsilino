@@ -3,17 +3,25 @@ import '../api_client.dart';
 import '../models/restaurant.dart';
 import '../models/tag_model.dart';
 
-/// Result for restaurants list.
+/// Result for restaurants list (supports pagination).
 class RestaurantsListResult {
   final bool success;
   final List<Restaurant> restaurants;
   final String? error;
+  final int total;
+  final int page;
+  final int pages;
 
   const RestaurantsListResult({
     required this.success,
     this.restaurants = const [],
     this.error,
+    this.total = 0,
+    this.page = 1,
+    this.pages = 1,
   });
+
+  bool get hasNextPage => page < pages;
 }
 
 /// Result for single restaurant detail.
@@ -37,7 +45,7 @@ class RestaurantsRepository {
     : _client = client ?? ApiClient.instance;
 
   /// Enable mock data for product mockups.
-  static const bool kEnableMockData = true;
+  static const bool kEnableMockData = false;
 
   List<Restaurant> _getMockRestaurants() {
     return [
@@ -159,7 +167,7 @@ class RestaurantsRepository {
     }
 
     try {
-      final response = await _client.get('/v1/tags');
+      final response = await _client.get('v1/tags');
       if (response.statusCode == 200) {
         final body = response.data;
         List<dynamic> tagList;
@@ -191,9 +199,12 @@ class RestaurantsRepository {
   /// Get the cached structured tag objects.
   List<RestaurantTag> get cachedTagObjects => _cachedTagObjects;
 
-  /// Get list of all restaurants.
-  /// Uses `GET /v1/restaurants` with `{success, data}` wrapper.
-  Future<RestaurantsListResult> getRestaurants() async {
+  /// Get list of all restaurants (paginated).
+  /// Uses `GET /v1/restaurants` with `{success, data, total, page, pages}` wrapper.
+  Future<RestaurantsListResult> getRestaurants({
+    int page = 1,
+    int limit = 20,
+  }) async {
     if (kEnableMockData) {
       return RestaurantsListResult(
         success: true,
@@ -202,10 +213,25 @@ class RestaurantsRepository {
     }
 
     try {
-      final response = await _client.get('/v1/restaurants');
+      final response = await _client.get(
+        'v1/restaurants',
+        queryParameters: {'page': page, 'limit': limit},
+      );
 
       if (response.statusCode == 200) {
-        final restaurants = _parseRestaurantsResponse(response.data);
+        final body = response.data;
+        if (body is Map<String, dynamic> && body['success'] == true) {
+          final restaurants = _parseRestaurantsFromList(body['data']);
+          return RestaurantsListResult(
+            success: true,
+            restaurants: restaurants,
+            total: body['total'] as int? ?? restaurants.length,
+            page: body['page'] as int? ?? page,
+            pages: body['pages'] as int? ?? 1,
+          );
+        }
+        // Fallback: raw list
+        final restaurants = _parseRestaurantsResponse(body);
         if (restaurants != null) {
           return RestaurantsListResult(success: true, restaurants: restaurants);
         }
@@ -250,7 +276,7 @@ class RestaurantsRepository {
       }
 
       final response = await _client.get(
-        '/v1/restaurants',
+        'v1/restaurants',
         queryParameters: queryParams,
       );
 
@@ -287,7 +313,7 @@ class RestaurantsRepository {
     }
 
     try {
-      final response = await _client.get('/v1/restaurants/$id');
+      final response = await _client.get('v1/restaurants/$id');
 
       if (response.statusCode == 200) {
         final body = response.data;
@@ -323,6 +349,17 @@ class RestaurantsRepository {
         error: 'An unexpected error occurred: $e',
       );
     }
+  }
+
+  /// Parse a list of restaurants from a `data` field.
+  List<Restaurant> _parseRestaurantsFromList(dynamic data) {
+    if (data is List) {
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map((json) => Restaurant.fromJson(json))
+          .toList();
+    }
+    return [];
   }
 
   /// Parse restaurants list from either `{success, data: [...]}` or raw `[...]`.
@@ -399,7 +436,7 @@ class RestaurantsRepository {
   Future<LikeResult> likeRestaurant(String restaurantId) async {
     try {
       final response = await _client.post(
-        '/me/liked-restaurants/$restaurantId/add/',
+        'v1/me/liked-restaurants/$restaurantId/add/',
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -428,7 +465,7 @@ class RestaurantsRepository {
   Future<LikeResult> unlikeRestaurant(String restaurantId) async {
     try {
       final response = await _client.post(
-        '/me/liked-restaurants/$restaurantId/remove/',
+        'v1/me/liked-restaurants/$restaurantId/remove/',
       );
 
       if (response.statusCode == 200 || response.statusCode == 204) {
@@ -454,35 +491,25 @@ class RestaurantsRepository {
   }
 
   /// Get list of liked restaurant IDs.
+  /// Uses GET /v1/me/liked-restaurants/ → {success, data: [...]}
   Future<LikedIdsResult> getLikedRestaurantIds() async {
     try {
-      final response = await _client.get('/me/liked-restaurants/');
+      final response = await _client.get('v1/me/liked-restaurants/');
 
       if (response.statusCode == 200) {
-        dynamic data = response.data;
-        List<dynamic> list;
-
-        // Handle wrapper object { "liked_restaurants": [...] }
-        if (data is Map && data['liked_restaurants'] != null) {
-          list = data['liked_restaurants'] as List<dynamic>;
-        } else if (data is List) {
-          list = data;
-        } else {
-          list = [];
-        }
+        final body = response.data;
+        final list = _extractDataList(body);
 
         final ids = list
             .map((item) {
               if (item is String) return item;
-              if (item is Map) {
-                return (item['id']?.toString()) ??
-                    (item['restaurant']?.toString());
-              }
-              return item?.toString();
+              if (item is Map) return item['id']?.toString();
+              return null;
             })
             .whereType<String>()
             .where((id) => id.isNotEmpty)
             .toList();
+
         return LikedIdsResult(success: true, ids: ids);
       }
 
@@ -501,28 +528,17 @@ class RestaurantsRepository {
   }
 
   /// Get list of liked restaurants with full details.
+  /// Uses GET /v1/me/liked-restaurants/ → {success, data: [...]}
   Future<RestaurantsListResult> getLikedRestaurants() async {
     try {
-      final response = await _client.get('/me/liked-restaurants/');
+      final response = await _client.get('v1/me/liked-restaurants/');
 
       if (response.statusCode == 200) {
-        dynamic data = response.data;
-        List<dynamic> list;
-
-        // Handle wrapper object { "liked_restaurants": [...] }
-        if (data is Map && data['liked_restaurants'] != null) {
-          list = data['liked_restaurants'] as List<dynamic>;
-        } else if (data is List) {
-          list = data;
-        } else {
-          list = [];
-        }
-
+        final list = _extractDataList(response.data);
         final restaurants = list
             .whereType<Map<String, dynamic>>()
             .map((json) => Restaurant.fromJson(json))
             .toList();
-
         return RestaurantsListResult(success: true, restaurants: restaurants);
       }
 
@@ -538,6 +554,18 @@ class RestaurantsRepository {
         error: 'An unexpected error occurred: $e',
       );
     }
+  }
+
+  /// Extracts a `List` from a `{success, data: [...]}` API response.
+  /// Handles both the wrapped format and a bare List fallback.
+  List<dynamic> _extractDataList(dynamic body) {
+    if (body is Map<String, dynamic> &&
+        body['success'] == true &&
+        body['data'] is List) {
+      return body['data'] as List<dynamic>;
+    }
+    if (body is List) return body;
+    return [];
   }
 
   LikeResult _handleLikeDioError(DioException e) {

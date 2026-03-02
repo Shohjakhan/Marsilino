@@ -22,6 +22,10 @@ class Restaurant {
   final int? maxPeople;
   final List<String>? availableTimes;
   final String? menuUrl;
+  final String? locationLink;
+  final bool isLiked;
+  final double? averageRating;
+  final int? totalRatings;
 
   const Restaurant({
     required this.id,
@@ -34,6 +38,7 @@ class Restaurant {
     this.socialMedia,
     this.menu,
     this.menuUrl,
+    this.locationLink,
     this.locationText,
     this.cashbackPercentage,
     this.tin,
@@ -44,13 +49,17 @@ class Restaurant {
     this.bookingAvailable,
     this.maxPeople,
     this.availableTimes,
+    this.isLiked = false,
+    this.averageRating,
+    this.totalRatings,
   });
 
   /// Parse from JSON.
   factory Restaurant.fromJson(Map<String, dynamic> json) {
-    // Parse gallery images (handle both 'gallery' and 'gallery_images')
+    // Parse gallery images (handle both 'gallery', 'gallery_images', and 'media' arrays)
     List<String> gallery = [];
-    final rawGallery = json['gallery'] ?? json['gallery_images'];
+    final rawGallery =
+        json['gallery'] ?? json['gallery_images'] ?? json['media'];
     if (rawGallery != null && rawGallery is List) {
       gallery = rawGallery
           .map((img) {
@@ -64,11 +73,18 @@ class Restaurant {
     // Handle menu (can be List or String URL)
     List<dynamic>? menuList;
     String? menuUrl;
-    if (json['menu'] is List) {
-      menuList = json['menu'] as List<dynamic>;
-    } else if (json['menu'] is String) {
-      menuUrl = json['menu'] as String;
+    final rawMenu = json['menu'];
+    if (rawMenu is List) {
+      menuList = rawMenu;
+    } else if (rawMenu != null) {
+      menuUrl = rawMenu.toString();
     }
+
+    // Parse location_link
+    final rawLocationLink = json['location_link'];
+    final String? locationLink = rawLocationLink != null
+        ? rawLocationLink.toString()
+        : null;
 
     // Parse tags (structured objects from new API)
     List<RestaurantTag> parsedTags = [];
@@ -93,6 +109,7 @@ class Restaurant {
           : null,
       menu: menuList,
       menuUrl: menuUrl,
+      locationLink: locationLink,
       locationText: json['location_text'] as String?,
       cashbackPercentage:
           _parseDouble(json['cashback_percentage']) ??
@@ -100,13 +117,20 @@ class Restaurant {
       tin: json['tin'] as String?,
       tags: parsedTags,
       galleryImages: gallery,
-      latitude: _parseDouble(json['latitude']),
-      longitude: _parseDouble(json['longitude']),
+      latitude:
+          _parseDouble(json['latitude']) ??
+          _extractLatFromYandex(json['yandex_map_url'] as String?),
+      longitude:
+          _parseDouble(json['longitude']) ??
+          _extractLngFromYandex(json['yandex_map_url'] as String?),
       bookingAvailable: json['booking_available'] as bool?,
       maxPeople: json['max_people'] as int?,
       availableTimes: (json['available_times'] as List?)
           ?.map((e) => e.toString())
           .toList(),
+      isLiked: json['is_liked'] as bool? ?? false,
+      averageRating: _parseDouble(json['average_rating']),
+      totalRatings: json['total_ratings'] as int?,
     );
   }
 
@@ -115,6 +139,52 @@ class Restaurant {
     if (value is double) return value;
     if (value is int) return value.toDouble();
     if (value is String) return double.tryParse(value);
+    return null;
+  }
+
+  static double? _extractLatFromYandex(String? url) {
+    if (url == null || url.isEmpty) return null;
+    // Try to find lat,lng in coordinates like ?ll=69.2401%2C41.2995 or coordinates param
+    // format is often ll=longitude,latitude or pt=longitude,latitude in yandex urls
+    // Some urls might have coordinates in path /maps/org/name/id/?ll=lng,lat
+
+    // Yandex standard format is usually ll=longitude,latitude
+    final llMatch = RegExp(r'll=([0-9.]+)(?:,|%2C)([0-9.]+)').firstMatch(url);
+    if (llMatch != null && llMatch.groupCount >= 2) {
+      return double.tryParse(
+        llMatch.group(2)!,
+      ); // Group 2 is latitude in Yandex (ll=lon,lat)
+    }
+
+    // Also try pt parameter
+    final ptMatch = RegExp(r'pt=([0-9.]+)(?:,|%2C)([0-9.]+)').firstMatch(url);
+    if (ptMatch != null && ptMatch.groupCount >= 2) {
+      return double.tryParse(ptMatch.group(2)!);
+    }
+
+    // Could also just be something like lat=41.123
+    final latMatch = RegExp(r'lat=([0-9.]+)').firstMatch(url);
+    if (latMatch != null) return double.tryParse(latMatch.group(1)!);
+
+    return null;
+  }
+
+  static double? _extractLngFromYandex(String? url) {
+    if (url == null || url.isEmpty) return null;
+
+    final llMatch = RegExp(r'll=([0-9.]+)(?:,|%2C)([0-9.]+)').firstMatch(url);
+    if (llMatch != null && llMatch.groupCount >= 1) {
+      return double.tryParse(llMatch.group(1)!); // Group 1 is longitude
+    }
+
+    final ptMatch = RegExp(r'pt=([0-9.]+)(?:,|%2C)([0-9.]+)').firstMatch(url);
+    if (ptMatch != null && ptMatch.groupCount >= 1) {
+      return double.tryParse(ptMatch.group(1)!);
+    }
+
+    final lonMatch = RegExp(r'lon(?:gitude)?=([0-9.]+)').firstMatch(url);
+    if (lonMatch != null) return double.tryParse(lonMatch.group(1)!);
+
     return null;
   }
 

@@ -86,5 +86,92 @@
   "loadingRestaurants": "Loading restaurants...",
   "couldNotGetLocation": "Could not get location",
   "locationPermissionDenied": "Location permission denied. Enable in settings.",
-  "gettingLocation": "Getting location..."
+  "gettingLocation": "Getting location...",
+  "cashbackWallet": "Cashback – {name}",
+  "@cashbackWallet": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "balance": "Balance",
+  "transferToCard": "Transfer to Card",
+  "recentCashback": "+UZS {amount} recent",
+  "@recentCashback": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "pointAtQr": "Point at receipt QR code",
+  "scanReceiptFor": "Scan your {name} receipt",
+  "@scanReceiptFor": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "scanFiscalReceipt": "Scan the fiscal receipt to earn cashback",
+  "cashbackRate": "Cashback rate: {pct}%",
+  "@cashbackRate": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "fetchingReceipt": "Fetching receipt...",
+  "verifyingFiscal": "Verifying with fiscal service",
+  "receiptVerified": "Receipt Verified",
+  "restaurantLabel": "Restaurant",
+  "receiptNumberLabel": "Receipt #",
+  "dateLabel": "Date",
+  "totalPaidLabel": "Total Paid",
+  "cashbackEarned": "Cashback Earned",
+  "redeemCashbackBtn": "Redeem Cashback",
+  "cashbackRedeemed": "Cashback Redeemed!",
+  "scanAnother": "Scan Another",
+  "scanAgain": "Scan Again",
+  "cashbackAddedWallet": "Cashback added to your wallet!",
+  "cashbackPctFrom": "{pct}% cashback from {name}",
+  "@cashbackPctFrom": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "transferSuccess": "Balance transferred to your card!",
+  "rateYourExperience": "Rate Your Experience",
+  "rateExperienceSub": "How was your visit to {name}?",
+  "@rateExperienceSub": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "submitRating": "Submit Rating",
+  "skipRating": "Skip",
+  "ratingThanks": "Thank you for your feedback!",
+  "noFavoritesYet": "No favorites yet",
+  "noFavoritesSub": "Tap the heart icon on any restaurant to save it here",
+  "exploreRestaurants": "Explore Restaurants",
+  "removedFromFavorites": "Removed from favorites",
+  "logoutConfirm": "Are you sure you want to log out?",
+  "liked": "Liked",
+  "restaurantsCount": "{count} restaurants",
+  "@restaurantsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

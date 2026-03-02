@@ -60,7 +60,7 @@ class SoliqApi {
         data['restaurant_id'] = restaurantId;
       }
 
-      final response = await _client.post('/v1/receipt/verify', data: data);
+      final response = await _client.post('/v1/receipt/verify/', data: data);
 
       final responseData = response.data;
 

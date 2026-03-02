@@ -621,6 +621,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Getting location...'**
   String get gettingLocation;
+
+  /// No description provided for @cashbackWallet.
+  ///
+  /// In en, this message translates to:
+  /// **'Cashback – {name}'**
+  String cashbackWallet(String name);
+
+  /// No description provided for @balance.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get balance;
+
+  /// No description provided for @transferToCard.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer to Card'**
+  String get transferToCard;
+
+  /// No description provided for @recentCashback.
+  ///
+  /// In en, this message translates to:
+  /// **'+UZS {amount} recent'**
+  String recentCashback(String amount);
+
+  /// No description provided for @pointAtQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Point at receipt QR code'**
+  String get pointAtQr;
+
+  /// No description provided for @scanReceiptFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan your {name} receipt'**
+  String scanReceiptFor(String name);
+
+  /// No description provided for @scanFiscalReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan the fiscal receipt to earn cashback'**
+  String get scanFiscalReceipt;
+
+  /// No description provided for @cashbackRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Cashback rate: {pct}%'**
+  String cashbackRate(int pct);
+
+  /// No description provided for @fetchingReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching receipt...'**
+  String get fetchingReceipt;
+
+  /// No description provided for @verifyingFiscal.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying with fiscal service'**
+  String get verifyingFiscal;
+
+  /// No description provided for @receiptVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt Verified'**
+  String get receiptVerified;
+
+  /// No description provided for @restaurantLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Restaurant'**
+  String get restaurantLabel;
+
+  /// No description provided for @receiptNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt #'**
+  String get receiptNumberLabel;
+
+  /// No description provided for @dateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get dateLabel;
+
+  /// No description provided for @totalPaidLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Paid'**
+  String get totalPaidLabel;
+
+  /// No description provided for @cashbackEarned.
+  ///
+  /// In en, this message translates to:
+  /// **'Cashback Earned'**
+  String get cashbackEarned;
+
+  /// No description provided for @redeemCashbackBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Redeem Cashback'**
+  String get redeemCashbackBtn;
+
+  /// No description provided for @cashbackRedeemed.
+  ///
+  /// In en, this message translates to:
+  /// **'Cashback Redeemed!'**
+  String get cashbackRedeemed;
+
+  /// No description provided for @scanAnother.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Another'**
+  String get scanAnother;
+
+  /// No description provided for @scanAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Again'**
+  String get scanAgain;
+
+  /// No description provided for @cashbackAddedWallet.
+  ///
+  /// In en, this message translates to:
+  /// **'Cashback added to your wallet!'**
+  String get cashbackAddedWallet;
+
+  /// No description provided for @cashbackPctFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'{pct}% cashback from {name}'**
+  String cashbackPctFrom(int pct, String name);
+
+  /// No description provided for @transferSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance transferred to your card!'**
+  String get transferSuccess;
+
+  /// No description provided for @rateYourExperience.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate Your Experience'**
+  String get rateYourExperience;
+
+  /// No description provided for @rateExperienceSub.
+  ///
+  /// In en, this message translates to:
+  /// **'How was your visit to {name}?'**
+  String rateExperienceSub(String name);
+
+  /// No description provided for @submitRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Rating'**
+  String get submitRating;
+
+  /// No description provided for @skipRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get skipRating;
+
+  /// No description provided for @ratingThanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you for your feedback!'**
+  String get ratingThanks;
+
+  /// No description provided for @noFavoritesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No favorites yet'**
+  String get noFavoritesYet;
+
+  /// No description provided for @noFavoritesSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the heart icon on any restaurant to save it here'**
+  String get noFavoritesSub;
+
+  /// No description provided for @exploreRestaurants.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore Restaurants'**
+  String get exploreRestaurants;
+
+  /// No description provided for @removedFromFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from favorites'**
+  String get removedFromFavorites;
+
+  /// No description provided for @logoutConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to log out?'**
+  String get logoutConfirm;
+
+  /// No description provided for @liked.
+  ///
+  /// In en, this message translates to:
+  /// **'Liked'**
+  String get liked;
+
+  /// No description provided for @restaurantsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} restaurants'**
+  String restaurantsCount(int count);
 }
 
 class _AppLocalizationsDelegate

@@ -272,4 +272,124 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get gettingLocation => 'Joylashuv aniqlanmoqda...';
+
+  @override
+  String cashbackWallet(String name) {
+    return 'Keshbek – $name';
+  }
+
+  @override
+  String get balance => 'Balans';
+
+  @override
+  String get transferToCard => 'Kartaga o\'tkazish';
+
+  @override
+  String recentCashback(String amount) {
+    return '+$amount UZS yaqinda';
+  }
+
+  @override
+  String get pointAtQr => 'Hisob QR kodiga yo\'naltiring';
+
+  @override
+  String scanReceiptFor(String name) {
+    return '$name chekini skanerlang';
+  }
+
+  @override
+  String get scanFiscalReceipt => 'Keshbek olish uchun chekni skanerlang';
+
+  @override
+  String cashbackRate(int pct) {
+    return 'Keshbek stavkasi: $pct%';
+  }
+
+  @override
+  String get fetchingReceipt => 'Chek yuklanmoqda...';
+
+  @override
+  String get verifyingFiscal => 'Fiskal xizmat orqali tekshirish';
+
+  @override
+  String get receiptVerified => 'Chek tasdiqlandi';
+
+  @override
+  String get restaurantLabel => 'Restoran';
+
+  @override
+  String get receiptNumberLabel => 'Chek №';
+
+  @override
+  String get dateLabel => 'Sana';
+
+  @override
+  String get totalPaidLabel => 'Jami to\'landi';
+
+  @override
+  String get cashbackEarned => 'Keshbek olindi';
+
+  @override
+  String get redeemCashbackBtn => 'Keshbekni qo\'llash';
+
+  @override
+  String get cashbackRedeemed => 'Keshbek qo\'llandi!';
+
+  @override
+  String get scanAnother => 'Yana skanerlash';
+
+  @override
+  String get scanAgain => 'Qayta skanerlash';
+
+  @override
+  String get cashbackAddedWallet => 'Keshbek hamyonga qo\'shildi!';
+
+  @override
+  String cashbackPctFrom(int pct, String name) {
+    return '$name dan $pct% keshbek';
+  }
+
+  @override
+  String get transferSuccess => 'Balans kartaga o\'tkazildi!';
+
+  @override
+  String get rateYourExperience => 'Tajribangizni baholang';
+
+  @override
+  String rateExperienceSub(String name) {
+    return '$name ga tashrif qanday kechdi?';
+  }
+
+  @override
+  String get submitRating => 'Baholashni yuborish';
+
+  @override
+  String get skipRating => 'O\'tkazib yuborish';
+
+  @override
+  String get ratingThanks => 'Fikringiz uchun rahmat!';
+
+  @override
+  String get noFavoritesYet => 'Saqlangan yo\'q';
+
+  @override
+  String get noFavoritesSub =>
+      'Istalgan restoranda yurak belgisini bosib uni saqlang';
+
+  @override
+  String get exploreRestaurants => 'Restoranlarni ko\'rish';
+
+  @override
+  String get removedFromFavorites => 'Saqlanganlardan o\'chirildi';
+
+  @override
+  String get logoutConfirm => 'Tizimdan chiqmoqchimisiz?';
+
+  @override
+  String get liked => 'Saqlanganlar';
+
+  @override
+  String restaurantsCount(int count) {
+    return '$count ta restoran';
+  }
 }

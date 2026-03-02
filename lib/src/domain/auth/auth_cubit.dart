@@ -25,24 +25,35 @@ class AuthCubit extends Cubit<AuthState> {
       await _authRepository.requestOtp(phoneNumber);
       emit(AuthOtpRequested(phoneNumber: phoneNumber));
     } catch (e) {
-      final message = e.toString().replaceFirst('Exception: ', '');
+      var message = e.toString().replaceFirst('Exception: ', '').trim();
+      if (message.isEmpty) message = 'Failed to request OTP. Please try again.';
       emit(AuthFailure(message: message));
     }
   }
 
   /// Verify OTP and handle authentication.
-  Future<void> verifyOtp(String phoneNumber, String code) async {
+  Future<void> verifyOtp(
+    String phoneNumber,
+    String code, {
+    String? fullName,
+  }) async {
     emit(const AuthLoading());
 
     try {
-      final result = await _authRepository.verifyOtp(phoneNumber, code);
+      final result = await _authRepository.verifyOtp(
+        phoneNumber,
+        code,
+        fullName: fullName,
+      );
 
       if (result.success) {
-        if (result.isNewUser) {
+        if (result.isNewUser && result.fullName == null) {
+          // New user with no name provided — go to profile completion page
           emit(AuthNewUser(phone: phoneNumber));
         } else {
-          final fullName = await _tokenStorage.getUserName();
-          emit(AuthAuthenticated(fullName: fullName, phone: phoneNumber));
+          // Existing user or new user who supplied a name during sign-up
+          final name = result.fullName ?? await _tokenStorage.getUserName();
+          emit(AuthAuthenticated(fullName: name, phone: phoneNumber));
         }
       } else {
         emit(AuthFailure(message: result.error ?? 'OTP verification failed'));

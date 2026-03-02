@@ -8,6 +8,7 @@ class OtpVerifyResult {
   final String? accessToken;
   final String? refreshToken;
   final bool isNewUser;
+  final String? fullName;
   final String? error;
 
   const OtpVerifyResult({
@@ -15,6 +16,7 @@ class OtpVerifyResult {
     this.accessToken,
     this.refreshToken,
     this.isNewUser = false,
+    this.fullName,
     this.error,
   });
 }
@@ -37,20 +39,24 @@ class AuthRepository {
       _tokenStorage = tokenStorage ?? TokenStorage.instance;
 
   /// Request OTP for phone number.
-  /// Returns success/error result.
-  /// Request OTP for phone number.
+  /// Hits POST /api/otp/send.
   /// Throws exception on failure.
   Future<void> requestOtp(String phoneNumber) async {
     try {
-      // Clean phone number - remove spaces and ensure format
       final cleanPhone = phoneNumber.replaceAll(' ', '');
 
       final response = await _client.post(
-        '/auth/request-otp/',
+        'otp/send/',
         data: {'phone_number': cleanPhone},
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        // In dev mode the server returns the OTP code for easy testing
+        final otpCode = response.data?['otp_code'];
+        if (otpCode != null) {
+          // ignore: avoid_print
+          print('[DEV] OTP code: $otpCode');
+        }
         return;
       }
 
@@ -63,22 +69,36 @@ class AuthRepository {
   }
 
   /// Verify OTP code.
+  /// Hits POST /api/otp/verify.
+  /// [fullName] is optional — sent for new users registering via Sign Up.
   /// Returns tokens and user info on success.
   /// Throws exception on failure.
-  Future<OtpVerifyResult> verifyOtp(String phoneNumber, String code) async {
+  Future<OtpVerifyResult> verifyOtp(
+    String phoneNumber,
+    String code, {
+    String? fullName,
+  }) async {
     try {
       final cleanPhone = phoneNumber.replaceAll(' ', '');
 
-      final response = await _client.post(
-        '/auth/verify-otp/',
-        data: {'phone_number': cleanPhone, 'code': code},
-      );
+      final body = <String, dynamic>{'phone_number': cleanPhone, 'code': code};
+      if (fullName != null && fullName.trim().isNotEmpty) {
+        body['full_name'] = fullName.trim();
+      }
+
+      final response = await _client.post('otp/verify/', data: body);
 
       if (response.statusCode == 200) {
-        final data = response.data;
-        final accessToken = data?['access'] as String?;
-        final refreshToken = data?['refresh'] as String?;
-        final isNewUser = data?['is_new_user'] ?? false;
+        final data = response.data as Map<String, dynamic>?;
+        final tokens = data?['tokens'] as Map<String, dynamic>?;
+        final accessToken = tokens?['access'] as String?;
+        final refreshToken = tokens?['refresh'] as String?;
+        final isNewUser = data?['is_new_user'] as bool? ?? false;
+        final userMap = data?['user'] as Map<String, dynamic>?;
+        final returnedName =
+            userMap?['full_name'] as String? ??
+            userMap?['name'] as String? ??
+            fullName;
 
         // Save tokens if present
         if (accessToken != null && refreshToken != null) {
@@ -86,10 +106,11 @@ class AuthRepository {
             accessToken: accessToken,
             refreshToken: refreshToken,
           );
-          // Set auth header for future requests
           _client.setAuthToken(accessToken);
-          // Save phone
-          await _tokenStorage.saveUserInfo(phone: cleanPhone);
+          await _tokenStorage.saveUserInfo(
+            phone: cleanPhone,
+            fullName: returnedName,
+          );
         }
 
         return OtpVerifyResult(
@@ -97,6 +118,7 @@ class AuthRepository {
           accessToken: accessToken,
           refreshToken: refreshToken,
           isNewUser: isNewUser,
+          fullName: returnedName,
         );
       }
 
@@ -112,7 +134,7 @@ class AuthRepository {
   Future<UpdateProfileResult> updateProfile({required String fullName}) async {
     try {
       final response = await _client.patch(
-        '/me/',
+        'v1/me/',
         data: {'full_name': fullName},
       );
 
@@ -144,7 +166,7 @@ class AuthRepository {
       if (refreshToken == null) return false;
 
       final response = await _client.post(
-        '/token/refresh/',
+        'token/refresh/',
         data: {'refresh': refreshToken},
       );
 
@@ -195,19 +217,26 @@ class AuthRepository {
           if (statusCode == 429) {
             // Rate limited
             errorMessage =
-                data['error']?.toString() ?? 'Too many requests. Please wait.';
+                data['error']?.toString() ??
+                data['detail']?.toString() ??
+                data['message']?.toString() ??
+                'Too many requests. Please wait.';
           } else if (statusCode == 400) {
             final phoneErr = data['phone_number'];
             errorMessage =
                 data['error']?.toString() ??
-                (phoneErr is List
-                    ? phoneErr.first.toString()
-                    : 'Invalid request');
+                data['detail']?.toString() ??
+                data['message']?.toString() ??
+                (phoneErr is List ? phoneErr.first.toString() : null) ??
+                'Invalid request';
           } else {
             errorMessage =
-                data['error']?.toString() ?? 'Server error ($statusCode)';
+                data['error']?.toString() ??
+                data['detail']?.toString() ??
+                data['message']?.toString() ??
+                'Server error ($statusCode)';
           }
-        } else if (data is String) {
+        } else if (data is String && data.trim().isNotEmpty) {
           errorMessage = data;
         } else {
           errorMessage = 'Server error ($statusCode)';
@@ -215,6 +244,10 @@ class AuthRepository {
         break;
       default:
         errorMessage = 'Network error. Please try again.';
+    }
+
+    if (errorMessage.trim().isEmpty) {
+      errorMessage = 'An unknown error occurred.';
     }
 
     return errorMessage;

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:restaurant/l10n/gen/app_localizations.dart';
 import '../../domain/cashback/cashback_cubit.dart';
 import '../../domain/qr/qr_cubit.dart';
 import '../../domain/qr/qr_state.dart';
 import '../../theme/app_theme.dart';
 import '../common/primary_button.dart';
+import '../../data/repositories/rating_repository.dart';
 
 /// QR Scan page with camera preview, receipt display, and cashback redemption.
 ///
@@ -91,8 +93,23 @@ class _QrScanPageState extends State<QrScanPage> {
   /// Whether this page was opened from a restaurant page (vs. navbar).
   bool get _hasRestaurantContext => widget.restaurantId != null;
 
+  void _showRatingSheet() {
+    if (widget.restaurantId == null || widget.restaurantName == null) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _RatingBottomSheet(
+        restaurantId: widget.restaurantId!,
+        restaurantName: widget.restaurantName!,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return BlocProvider.value(
       value: _qrCubit,
       child: Scaffold(
@@ -116,7 +133,7 @@ class _QrScanPageState extends State<QrScanPage> {
             if (state.redeemed) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: const Text('Cashback added to your wallet!'),
+                  content: Text(l10n.cashbackAddedWallet),
                   backgroundColor: kSuccess,
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
@@ -125,6 +142,10 @@ class _QrScanPageState extends State<QrScanPage> {
                   margin: const EdgeInsets.all(16),
                 ),
               );
+              // Show rating sheet after redeeming
+              Future.delayed(const Duration(milliseconds: 800), () {
+                if (mounted) _showRatingSheet();
+              });
             }
             if (state.error != null) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -142,19 +163,19 @@ class _QrScanPageState extends State<QrScanPage> {
           },
           builder: (context, state) {
             if (state.isLoadingReceipt) {
-              return _buildLoadingView();
+              return _buildLoadingView(l10n);
             }
             if (state.receipt != null) {
-              return _buildReceiptView(state);
+              return _buildReceiptView(state, l10n);
             }
-            return _buildScannerView();
+            return _buildScannerView(l10n);
           },
         ),
       ),
     );
   }
 
-  Widget _buildScannerView() {
+  Widget _buildScannerView(AppLocalizations l10n) {
     return Column(
       children: [
         Expanded(
@@ -214,7 +235,7 @@ class _QrScanPageState extends State<QrScanPage> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'Point at receipt QR code',
+                      l10n.pointAtQr,
                       style: kSubtitleStyle.copyWith(
                         color: kTextPrimary,
                         fontWeight: FontWeight.w500,
@@ -226,14 +247,14 @@ class _QrScanPageState extends State<QrScanPage> {
               const SizedBox(height: 12),
               Text(
                 _hasRestaurantContext
-                    ? 'Scan your ${widget.restaurantName} receipt'
-                    : 'Scan the fiscal receipt to earn cashback',
+                    ? l10n.scanReceiptFor(widget.restaurantName!)
+                    : l10n.scanFiscalReceipt,
                 style: kBodyStyle.copyWith(color: kTextSecondary, fontSize: 13),
               ),
               if (_hasRestaurantContext && widget.cashbackPercent != null) ...[
                 const SizedBox(height: 4),
                 Text(
-                  'Cashback rate: ${widget.cashbackPercent}%',
+                  l10n.cashbackRate(widget.cashbackPercent!),
                   style: kBodyStyle.copyWith(
                     color: kPrimaryBold,
                     fontSize: 13,
@@ -313,7 +334,7 @@ class _QrScanPageState extends State<QrScanPage> {
     );
   }
 
-  Widget _buildLoadingView() {
+  Widget _buildLoadingView(AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -334,12 +355,12 @@ class _QrScanPageState extends State<QrScanPage> {
           ),
           const SizedBox(height: 24),
           Text(
-            'Fetching receipt...',
+            l10n.fetchingReceipt,
             style: kSubtitleStyle.copyWith(color: kTextPrimary),
           ),
           const SizedBox(height: 8),
           Text(
-            'Verifying with fiscal service',
+            l10n.verifyingFiscal,
             style: kBodyStyle.copyWith(color: kTextSecondary),
           ),
         ],
@@ -347,7 +368,7 @@ class _QrScanPageState extends State<QrScanPage> {
     );
   }
 
-  Widget _buildReceiptView(QrState state) {
+  Widget _buildReceiptView(QrState state, AppLocalizations l10n) {
     final receipt = state.receipt!;
 
     return SingleChildScrollView(
@@ -365,7 +386,7 @@ class _QrScanPageState extends State<QrScanPage> {
             child: const Icon(Icons.receipt_long, size: 40, color: kSuccess),
           ),
           const SizedBox(height: 16),
-          Text('Receipt Verified', style: kTitleStyle.copyWith(fontSize: 20)),
+          Text(l10n.receiptVerified, style: kTitleStyle.copyWith(fontSize: 20)),
           const SizedBox(height: 32),
 
           // Receipt card
@@ -380,7 +401,7 @@ class _QrScanPageState extends State<QrScanPage> {
             child: Column(
               children: [
                 _buildReceiptRow(
-                  'Restaurant',
+                  l10n.restaurantLabel,
                   receipt.restaurantName,
                   icon: Icons.restaurant,
                 ),
@@ -389,7 +410,7 @@ class _QrScanPageState extends State<QrScanPage> {
                   child: Divider(height: 1),
                 ),
                 _buildReceiptRow(
-                  'Receipt #',
+                  l10n.receiptNumberLabel,
                   receipt.receiptNumber,
                   icon: Icons.tag,
                 ),
@@ -398,7 +419,7 @@ class _QrScanPageState extends State<QrScanPage> {
                   child: Divider(height: 1),
                 ),
                 _buildReceiptRow(
-                  'Date',
+                  l10n.dateLabel,
                   '${receipt.createdAt.day}.${receipt.createdAt.month.toString().padLeft(2, '0')}.${receipt.createdAt.year}',
                   icon: Icons.calendar_today,
                 ),
@@ -407,7 +428,7 @@ class _QrScanPageState extends State<QrScanPage> {
                   child: Divider(height: 1),
                 ),
                 _buildReceiptRow(
-                  'Total Paid',
+                  l10n.totalPaidLabel,
                   'UZS ${_formatNumber(receipt.totalAmount)}',
                   icon: Icons.payments,
                   bold: true,
@@ -439,7 +460,7 @@ class _QrScanPageState extends State<QrScanPage> {
             child: Column(
               children: [
                 Text(
-                  'Cashback Earned',
+                  l10n.cashbackEarned,
                   style: kBodyStyle.copyWith(
                     color: Colors.white.withValues(alpha: 0.8),
                   ),
@@ -457,7 +478,10 @@ class _QrScanPageState extends State<QrScanPage> {
                     widget.cashbackPercent != null) ...[
                   const SizedBox(height: 4),
                   Text(
-                    '${widget.cashbackPercent}% cashback from ${widget.restaurantName}',
+                    l10n.cashbackPctFrom(
+                      widget.cashbackPercent!,
+                      widget.restaurantName!,
+                    ),
                     style: kBodyStyle.copyWith(
                       color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 12,
@@ -472,7 +496,7 @@ class _QrScanPageState extends State<QrScanPage> {
           // Redeem button
           if (!state.redeemed)
             PrimaryButton(
-              label: 'Redeem Cashback',
+              label: l10n.redeemCashbackBtn,
               onPressed: () => _qrCubit.redeemCashback(),
             )
           else
@@ -492,7 +516,7 @@ class _QrScanPageState extends State<QrScanPage> {
                       const Icon(Icons.check_circle, color: kSuccess, size: 20),
                       const SizedBox(width: 8),
                       Text(
-                        'Cashback Redeemed!',
+                        l10n.cashbackRedeemed,
                         style: kSubtitleStyle.copyWith(
                           color: kSuccess,
                           fontWeight: FontWeight.w600,
@@ -503,7 +527,7 @@ class _QrScanPageState extends State<QrScanPage> {
                 ),
                 const SizedBox(height: 16),
                 PrimaryButton(
-                  label: 'Scan Another',
+                  label: l10n.scanAnother,
                   onPressed: () {
                     _qrCubit.reset();
                     _resetScanner();
@@ -513,7 +537,7 @@ class _QrScanPageState extends State<QrScanPage> {
             ),
           const SizedBox(height: 16),
 
-          // Back button (always visible)
+          // Scan again (always visible before redeem)
           if (!state.redeemed)
             TextButton(
               onPressed: () {
@@ -521,7 +545,7 @@ class _QrScanPageState extends State<QrScanPage> {
                 _resetScanner();
               },
               child: Text(
-                'Scan Again',
+                l10n.scanAgain,
                 style: kSubtitleStyle.copyWith(
                   color: kPrimary,
                   decoration: TextDecoration.underline,
@@ -559,6 +583,308 @@ class _QrScanPageState extends State<QrScanPage> {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Rating bottom sheet
+// ---------------------------------------------------------------------------
+
+class _RatingBottomSheet extends StatefulWidget {
+  final String restaurantId;
+  final String restaurantName;
+
+  const _RatingBottomSheet({
+    required this.restaurantId,
+    required this.restaurantName,
+  });
+
+  @override
+  State<_RatingBottomSheet> createState() => _RatingBottomSheetState();
+}
+
+class _RatingBottomSheetState extends State<_RatingBottomSheet>
+    with TickerProviderStateMixin {
+  int _selectedRating = 0;
+  bool _isSubmitting = false;
+  bool _submitted = false;
+  final RatingRepository _ratingRepository = RatingRepository();
+
+  // Animation controllers for each star
+  late final List<AnimationController> _starControllers;
+  late final List<Animation<double>> _starAnimations;
+
+  @override
+  void initState() {
+    super.initState();
+    _starControllers = List.generate(
+      5,
+      (i) => AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 300),
+      ),
+    );
+    _starAnimations = _starControllers.map((c) {
+      return Tween<double>(
+        begin: 1.0,
+        end: 1.35,
+      ).animate(CurvedAnimation(parent: c, curve: Curves.elasticOut));
+    }).toList();
+  }
+
+  @override
+  void dispose() {
+    for (final c in _starControllers) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _selectRating(int rating) {
+    setState(() => _selectedRating = rating);
+    // Animate all filled stars
+    for (int i = 0; i < 5; i++) {
+      if (i < rating) {
+        Future.delayed(Duration(milliseconds: i * 60), () {
+          if (mounted) {
+            _starControllers[i].forward(from: 0);
+          }
+        });
+      }
+    }
+  }
+
+  Future<void> _submit() async {
+    if (_selectedRating == 0) return;
+    setState(() => _isSubmitting = true);
+
+    try {
+      await _ratingRepository.submitRating(
+        restaurantId: widget.restaurantId,
+        rating: _selectedRating,
+      );
+    } catch (_) {
+      // Silently ignore — rating is optional
+    }
+
+    if (mounted) {
+      setState(() {
+        _isSubmitting = false;
+        _submitted = true;
+      });
+      await Future.delayed(const Duration(milliseconds: 1200));
+      if (mounted) Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: kCardBg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 30,
+            offset: const Offset(0, -8),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.only(
+        left: 28,
+        right: 28,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Drag handle
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: kTextSecondary.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 28),
+
+          if (_submitted) ...[
+            // Success state
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.elasticOut,
+              builder: (_, v, child) => Transform.scale(scale: v, child: child),
+              child: Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: kSuccess.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle,
+                  color: kSuccess,
+                  size: 40,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              l10n.ratingThanks,
+              style: kTitleStyle.copyWith(fontSize: 20),
+              textAlign: TextAlign.center,
+            ),
+          ] else ...[
+            // Rating emoji based on selection
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Text(
+                _selectedRating == 0
+                    ? '🤔'
+                    : _selectedRating == 1
+                    ? '😞'
+                    : _selectedRating == 2
+                    ? '😐'
+                    : _selectedRating == 3
+                    ? '🙂'
+                    : _selectedRating == 4
+                    ? '😊'
+                    : '🤩',
+                key: ValueKey(_selectedRating),
+                style: const TextStyle(fontSize: 48),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              l10n.rateYourExperience,
+              style: kTitleStyle.copyWith(fontSize: 22),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              l10n.rateExperienceSub(widget.restaurantName),
+              style: kBodyStyle.copyWith(color: kTextSecondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 28),
+
+            // Stars
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(5, (i) {
+                final filled = i < _selectedRating;
+                return GestureDetector(
+                  onTap: () => _selectRating(i + 1),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: AnimatedBuilder(
+                      animation: _starAnimations[i],
+                      builder: (_, child) => Transform.scale(
+                        scale: filled ? _starAnimations[i].value : 1.0,
+                        child: child,
+                      ),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        child: Icon(
+                          filled
+                              ? Icons.star_rounded
+                              : Icons.star_outline_rounded,
+                          color: filled
+                              ? const Color(0xFFFFB800)
+                              : kTextSecondary.withValues(alpha: 0.4),
+                          size: 48,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+            const SizedBox(height: 8),
+            // Rating label
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Text(
+                _selectedRating == 0
+                    ? ''
+                    : _selectedRating == 1
+                    ? 'Poor'
+                    : _selectedRating == 2
+                    ? 'Fair'
+                    : _selectedRating == 3
+                    ? 'Good'
+                    : _selectedRating == 4
+                    ? 'Great'
+                    : 'Excellent!',
+                key: ValueKey(_selectedRating),
+                style: kSubtitleStyle.copyWith(
+                  color: _selectedRating >= 4
+                      ? const Color(0xFFFFB800)
+                      : kTextSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Submit button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _selectedRating == 0 || _isSubmitting
+                    ? null
+                    : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kPrimaryBold,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: kTextSecondary.withValues(
+                    alpha: 0.15,
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(kButtonRadius),
+                  ),
+                  elevation: 0,
+                ),
+                child: _isSubmitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                    : Text(
+                        l10n.submitRating,
+                        style: kSubtitleStyle.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Skip
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                l10n.skipRating,
+                style: kBodyStyle.copyWith(color: kTextSecondary),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:restaurant/l10n/gen/app_localizations.dart';
 import '../../config/app_config.dart';
-import '../../data/models/restaurant.dart' as api;
+import '../../data/models/restaurant.dart';
 import '../../data/repositories/restaurants_repository.dart';
 import '../../theme/app_theme.dart';
 import '../common/gallery_carousel.dart';
@@ -11,92 +11,19 @@ import 'booking_section.dart';
 import '../qr_scan/qr_scan_page.dart';
 import '../common/navigation_notifications.dart';
 
-/// Restaurant data model for the landing page.
-class RestaurantData {
-  final String name;
-  final String description;
-  final String address;
-  final String workingHours;
-  final String phone;
-  final double rating;
-  final List<String> tags;
-  final List<String> galleryImages;
-  final String? logoUrl;
-  final String? menuImageUrl;
-  final String? cashback;
-  final String? instagram;
-  final String? telegram;
-
-  // Availability
-  final bool? bookingAvailable;
-  final int? maxPeople;
-  final List<String>? availableTimes;
-  final double? latitude;
-  final double? longitude;
-
-  const RestaurantData({
-    required this.name,
-    required this.description,
-    required this.address,
-    required this.workingHours,
-    required this.phone,
-    required this.rating,
-    this.tags = const [],
-    this.galleryImages = const [],
-    this.logoUrl,
-    this.menuImageUrl,
-    this.cashback,
-    this.instagram,
-    this.telegram,
-    this.bookingAvailable,
-    this.maxPeople,
-    this.availableTimes,
-    this.latitude,
-    this.longitude,
-  });
-
-  /// Extract cashback percentage from cashback string (e.g., "10% cashback" -> 10).
-  int get cashbackPercent {
-    if (cashback == null) return 0;
-    final match = RegExp(r'(\d+)').firstMatch(cashback!);
-    return match != null ? int.parse(match.group(1)!) : 0;
-  }
-
-  /// Create from API model.
-  factory RestaurantData.fromApiModel(api.Restaurant r) {
-    return RestaurantData(
-      name: r.name,
-      description: r.description ?? '',
-      address: r.locationText ?? '',
-      workingHours: r.workingHours ?? '',
-      phone: r.phone ?? '',
-      rating: 4.5, // API doesn't provide rating yet
-      tags: r.tagsList,
-      galleryImages: r.galleryImages,
-      logoUrl: r.logo,
-      menuImageUrl: r.menuUrl,
-      cashback: r.cashbackText,
-      instagram: r.instagram,
-      telegram: r.telegram,
-      bookingAvailable: r.bookingAvailable,
-      maxPeople: r.maxPeople,
-      availableTimes: r.availableTimes,
-      latitude: r.latitude,
-      longitude: r.longitude,
-    );
-  }
-}
-
 /// Restaurant landing page with full details.
+///
+/// Accepts a [Restaurant] model directly from the API to guarantee all
+/// parsed fields (gallery, menu, locationLink, etc.) are preserved.
 class RestaurantPage extends StatefulWidget {
   /// Restaurant ID for loading from API.
   final String? restaurantId;
 
-  /// Initial data to display while loading (optional).
-  final RestaurantData? initialData;
+  /// Pre-loaded restaurant model. All fields come straight from the API JSON.
+  final Restaurant? initialRestaurant;
 
-  const RestaurantPage({super.key, this.restaurantId, this.initialData})
-    : assert(restaurantId != null || initialData != null);
+  const RestaurantPage({super.key, this.restaurantId, this.initialRestaurant})
+    : assert(restaurantId != null || initialRestaurant != null);
 
   @override
   State<RestaurantPage> createState() => _RestaurantPageState();
@@ -107,17 +34,25 @@ class _RestaurantPageState extends State<RestaurantPage> {
   bool _isLiked = false;
   bool _isLoading = false;
   bool _isLikeLoading = false;
-  RestaurantData? _data;
+
+  /// The restaurant data driving the entire page.
+  Restaurant? _restaurant;
 
   @override
   void initState() {
     super.initState();
-    _data = widget.initialData;
+    _restaurant = widget.initialRestaurant;
+    _isLiked = _restaurant?.isLiked ?? false;
+
     if (widget.restaurantId != null) {
       _loadRestaurantDetails();
       _loadLikedStatus();
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Data loading
+  // ---------------------------------------------------------------------------
 
   Future<void> _loadRestaurantDetails() async {
     if (widget.restaurantId == null) return;
@@ -133,7 +68,48 @@ class _RestaurantPageState extends State<RestaurantPage> {
     setState(() {
       _isLoading = false;
       if (result.success && result.restaurant != null) {
-        _data = RestaurantData.fromApiModel(result.restaurant!);
+        final fetched = result.restaurant!;
+        final old = _restaurant;
+        // Merge: prefer fetched data, fall back to initialRestaurant data.
+        _restaurant = Restaurant(
+          id: fetched.id,
+          name: fetched.name.isNotEmpty ? fetched.name : (old?.name ?? ''),
+          logo: fetched.logo ?? old?.logo,
+          description: (fetched.description?.isNotEmpty == true)
+              ? fetched.description
+              : old?.description,
+          hashtags: fetched.hashtags ?? old?.hashtags,
+          workingHours: (fetched.workingHours?.isNotEmpty == true)
+              ? fetched.workingHours
+              : old?.workingHours,
+          contactInformation:
+              fetched.contactInformation ?? old?.contactInformation,
+          socialMedia: fetched.socialMedia ?? old?.socialMedia,
+          menu: fetched.menu ?? old?.menu,
+          menuUrl: fetched.menuUrl ?? old?.menuUrl,
+          locationLink: fetched.locationLink ?? old?.locationLink,
+          locationText: (fetched.locationText?.isNotEmpty == true)
+              ? fetched.locationText
+              : old?.locationText,
+          cashbackPercentage:
+              fetched.cashbackPercentage ?? old?.cashbackPercentage,
+          tin: fetched.tin ?? old?.tin,
+          tags: fetched.tags.isNotEmpty
+              ? fetched.tags
+              : (old?.tags ?? const []),
+          galleryImages: fetched.galleryImages.isNotEmpty
+              ? fetched.galleryImages
+              : (old?.galleryImages ?? const []),
+          latitude: fetched.latitude ?? old?.latitude,
+          longitude: fetched.longitude ?? old?.longitude,
+          bookingAvailable: fetched.bookingAvailable ?? old?.bookingAvailable,
+          maxPeople: fetched.maxPeople ?? old?.maxPeople,
+          availableTimes: fetched.availableTimes ?? old?.availableTimes,
+          isLiked: fetched.isLiked || (old?.isLiked ?? false),
+          averageRating: fetched.averageRating ?? old?.averageRating,
+          totalRatings: fetched.totalRatings ?? old?.totalRatings,
+        );
+        _isLiked = _restaurant!.isLiked;
       }
     });
   }
@@ -152,17 +128,19 @@ class _RestaurantPageState extends State<RestaurantPage> {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Actions
+  // ---------------------------------------------------------------------------
+
   Future<void> _toggleLike() async {
     if (widget.restaurantId == null || _isLikeLoading) return;
 
-    // Optimistic update
     final wasLiked = _isLiked;
     setState(() {
       _isLiked = !_isLiked;
       _isLikeLoading = true;
     });
 
-    // Send request
     final result = wasLiked
         ? await _restaurantsRepository.unlikeRestaurant(widget.restaurantId!)
         : await _restaurantsRepository.likeRestaurant(widget.restaurantId!);
@@ -172,7 +150,6 @@ class _RestaurantPageState extends State<RestaurantPage> {
     setState(() => _isLikeLoading = false);
 
     if (!result.success) {
-      // Revert on error
       setState(() => _isLiked = wasLiked);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -190,10 +167,11 @@ class _RestaurantPageState extends State<RestaurantPage> {
   }
 
   void _openPhone() {
-    if (_data == null) return;
+    final phone = _restaurant?.phone;
+    if (phone == null || phone.isEmpty) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Calling ${_data!.phone} (simulation)'),
+        content: Text('Calling $phone (simulation)'),
         backgroundColor: kPrimary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -215,31 +193,31 @@ class _RestaurantPageState extends State<RestaurantPage> {
   }
 
   void _showMenuPreview() {
-    if (_data?.menuImageUrl == null) return;
+    final menuUrl = _restaurant?.menuUrl;
+    if (menuUrl == null) return;
 
     showDialog(
       context: context,
-      builder: (context) => _MenuPreviewDialog(imageUrl: _data!.menuImageUrl!),
+      builder: (context) => _MenuPreviewDialog(imageUrl: menuUrl),
     );
   }
 
   void _navigateToMap() {
-    if (_data == null) return;
+    if (_restaurant == null) return;
 
-    // Close current page first
     Navigator.pop(context);
 
-    // Dispatch notification to shell
     NavigateToMapNotification(
-      latitude: _data!.latitude,
-      longitude: _data!.longitude,
-      restaurantId: widget.restaurantId,
+      latitude: _restaurant!.latitude,
+      longitude: _restaurant!.longitude,
+      restaurantId: widget.restaurantId ?? _restaurant!.id,
     ).dispatch(context);
   }
 
   void _redeemCashback() {
-    if (_data == null) return;
-    if (widget.restaurantId == null) {
+    if (_restaurant == null) return;
+    final id = widget.restaurantId ?? _restaurant!.id;
+    if (id.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error: Missing restaurant ID')),
       );
@@ -249,17 +227,47 @@ class _RestaurantPageState extends State<RestaurantPage> {
       context,
       MaterialPageRoute(
         builder: (context) => QrScanPage(
-          restaurantId: widget.restaurantId!,
-          restaurantName: _data!.name,
-          cashbackPercent: _data!.cashbackPercent,
+          restaurantId: id,
+          restaurantName: _restaurant!.name,
+          cashbackPercent: _cashbackPercent,
         ),
       ),
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Convenience getters
+  // ---------------------------------------------------------------------------
+
+  String get _name => _restaurant?.name ?? '';
+  String get _description => _restaurant?.description ?? '';
+  String get _address => _restaurant?.locationText ?? '';
+  String get _workingHours => _restaurant?.workingHours ?? '';
+  String get _phone => _restaurant?.phone ?? '';
+  String? get _logoUrl => _restaurant?.logo;
+  String? get _menuImageUrl => _restaurant?.menuUrl;
+  String? get _cashbackText => _restaurant?.cashbackText;
+  String? get _locationLink => _restaurant?.locationLink;
+  String? get _instagram => _restaurant?.instagram;
+  String? get _telegram => _restaurant?.telegram;
+  List<String> get _galleryImages => _restaurant?.galleryImages ?? const [];
+  List<String> get _tags => _restaurant?.tagsList ?? const [];
+  double get _rating => _restaurant?.averageRating ?? 4.5;
+
+  int get _cashbackPercent {
+    final text = _cashbackText;
+    if (text == null) return 0;
+    final match = RegExp(r'(\d+)').firstMatch(text);
+    return match != null ? int.parse(match.group(1)!) : 0;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Build
+  // ---------------------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
-    if (_data == null && _isLoading) {
+    if (_restaurant == null && _isLoading) {
       return Scaffold(
         backgroundColor: kBackground,
         appBar: AppBar(
@@ -278,7 +286,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
       );
     }
 
-    if (_data == null) {
+    if (_restaurant == null) {
       return Scaffold(
         backgroundColor: kBackground,
         appBar: AppBar(
@@ -331,7 +339,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
               // Contact info
               SliverToBoxAdapter(child: _buildContactCard()),
               // Menu
-              if (_data!.menuImageUrl != null)
+              if (_menuImageUrl != null)
                 SliverToBoxAdapter(child: _buildMenuCard()),
               // Booking (behind feature flag)
               if (AppConfig.enableBookings)
@@ -339,11 +347,11 @@ class _RestaurantPageState extends State<RestaurantPage> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: BookingSection(
-                      restaurantName: _data!.name,
-                      restaurantId: widget.restaurantId!,
-                      bookingAvailable: _data!.bookingAvailable,
-                      maxPeople: _data!.maxPeople,
-                      availableTimes: _data!.availableTimes,
+                      restaurantName: _name,
+                      restaurantId: widget.restaurantId ?? _restaurant!.id,
+                      bookingAvailable: _restaurant!.bookingAvailable,
+                      maxPeople: _restaurant!.maxPeople,
+                      availableTimes: _restaurant!.availableTimes,
                     ),
                   ),
                 ),
@@ -352,7 +360,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
             ],
           ),
           // Floating bottom button
-          if (_data!.cashback != null) _buildFloatingButton(),
+          if (_cashbackText != null) _buildFloatingButton(),
         ],
       ),
     );
@@ -401,7 +409,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
   }
 
   Widget _buildGallery() {
-    final images = _data!.galleryImages
+    final images = _galleryImages
         .map((url) => CarouselNetworkImage(url))
         .toList();
 
@@ -433,9 +441,9 @@ class _RestaurantPageState extends State<RestaurantPage> {
               boxShadow: const [kCardShadow],
             ),
             child: ClipOval(
-              child: _data!.logoUrl != null
+              child: _logoUrl != null
                   ? Image.network(
-                      _data!.logoUrl!,
+                      _logoUrl!,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => const Icon(
                         Icons.restaurant,
@@ -456,20 +464,20 @@ class _RestaurantPageState extends State<RestaurantPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_data!.name, style: kTitleStyle.copyWith(fontSize: 22)),
+                Text(_name, style: kTitleStyle.copyWith(fontSize: 22)),
                 const SizedBox(height: 6),
                 Row(
                   children: [
                     const Icon(Icons.star, color: Colors.amber, size: 18),
                     const SizedBox(width: 4),
                     Text(
-                      _data!.rating.toStringAsFixed(1),
+                      _rating.toStringAsFixed(1),
                       style: kSubtitleStyle.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    if (_data!.cashback != null)
+                    if (_cashbackText != null)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
@@ -480,7 +488,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          _data!.cashback!,
+                          _cashbackText!,
                           style: const TextStyle(
                             fontFamily: '.SF Pro Text',
                             fontSize: 11,
@@ -533,7 +541,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
             ),
             const SizedBox(height: 12),
             Text(
-              _data!.description,
+              _description,
               style: kBodyStyle.copyWith(color: kTextSecondary, height: 1.5),
             ),
           ],
@@ -544,7 +552,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
 
   Widget _buildHashtagsCard() {
     final l10n = AppLocalizations.of(context)!;
-    if (_data!.tags.isEmpty) return const SizedBox.shrink();
+    if (_tags.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -561,7 +569,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _data!.tags.map((tag) {
+              children: _tags.map((tag) {
                 return Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -610,7 +618,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
             ),
             const SizedBox(height: 12),
             Text(
-              _data!.workingHours,
+              _workingHours,
               style: kBodyStyle.copyWith(color: kTextSecondary, height: 1.6),
             ),
           ],
@@ -634,43 +642,59 @@ class _RestaurantPageState extends State<RestaurantPage> {
             ),
             const SizedBox(height: 16),
             // Address
-            GestureDetector(
-              onTap: _navigateToMap,
-              child: _buildContactRow(
-                icon: Icons.location_on_outlined,
-                text: _data!.address,
-                isActive: true,
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Phone
-            GestureDetector(
-              onTap: _openPhone,
-              child: _buildContactRow(
-                icon: Icons.phone_outlined,
-                text: _data!.phone,
-                isActive: true,
-              ),
-            ),
-            // Social links
-            if (_data!.instagram != null) ...[
-              const SizedBox(height: 12),
+            if (_address.isNotEmpty) ...[
               GestureDetector(
-                onTap: () => _openSocial('Instagram', _data!.instagram!),
+                onTap: _navigateToMap,
                 child: _buildContactRow(
-                  icon: Icons.camera_alt_outlined,
-                  text: _data!.instagram!,
+                  icon: Icons.location_on_outlined,
+                  text: _address,
+                  isActive: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            // Location Link
+            if (_locationLink != null && _locationLink!.isNotEmpty) ...[
+              GestureDetector(
+                onTap: () => _openSocial('Location', _locationLink!),
+                child: _buildContactRow(
+                  icon: Icons.map_outlined,
+                  text: 'Open in Map',
+                  isActive: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            // Phone
+            if (_phone.isNotEmpty) ...[
+              GestureDetector(
+                onTap: _openPhone,
+                child: _buildContactRow(
+                  icon: Icons.phone_outlined,
+                  text: _phone,
                   isActive: true,
                 ),
               ),
             ],
-            if (_data!.telegram != null) ...[
+            // Social links
+            if (_instagram != null) ...[
               const SizedBox(height: 12),
               GestureDetector(
-                onTap: () => _openSocial('Telegram', _data!.telegram!),
+                onTap: () => _openSocial('Instagram', _instagram!),
+                child: _buildContactRow(
+                  icon: Icons.camera_alt_outlined,
+                  text: _instagram!,
+                  isActive: true,
+                ),
+              ),
+            ],
+            if (_telegram != null) ...[
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: () => _openSocial('Telegram', _telegram!),
                 child: _buildContactRow(
                   icon: Icons.send_outlined,
-                  text: _data!.telegram!,
+                  text: _telegram!,
                   isActive: true,
                 ),
               ),
@@ -761,7 +785,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
                     fit: StackFit.expand,
                     children: [
                       Image.network(
-                        _data!.menuImageUrl!,
+                        _menuImageUrl!,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
                           color: kTextSecondary.withValues(alpha: 0.1),
@@ -836,7 +860,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
       right: 24,
       bottom: 24,
       child: PrimaryButton(
-        label: '${l10n.redeemCashback} (${_data!.cashback})',
+        label: '${l10n.redeemCashback} ($_cashbackText)',
         onPressed: _redeemCashback,
       ),
     );

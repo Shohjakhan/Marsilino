@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import '../../data/api_client.dart';
 import '../../data/repositories/token_storage.dart';
 
 /// Service to handle Firebase Push Notifications.
@@ -20,14 +21,47 @@ class FirebasePushService {
         print('FCM Token: $token');
       }
       await _tokenStorage.saveFcmToken(token);
+      await _registerDeviceOnBackend(token);
     }
 
-    // Listen to token refresh
-    _firebaseMessaging.onTokenRefresh.listen(_tokenStorage.saveFcmToken);
+    // Listen to token refresh — save locally and send to backend
+    _firebaseMessaging.onTokenRefresh.listen((newToken) async {
+      await _tokenStorage.saveFcmToken(newToken);
+      await _registerDeviceOnBackend(newToken);
+    });
 
     // Setup message handlers
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  }
+
+  /// Send FCM token to the backend so it can target this device.
+  ///
+  /// Endpoint: `POST /v1/me/device`
+  /// Payload: `{ "fcm_token": "...", "device_type": "ios" | "android" }`
+  Future<void> _registerDeviceOnBackend(String fcmToken) async {
+    try {
+      final deviceType =
+          defaultTargetPlatform == TargetPlatform.iOS ||
+              defaultTargetPlatform == TargetPlatform.macOS
+          ? 'ios'
+          : 'android';
+
+      await ApiClient.instance.post(
+        '/v1/me/device',
+        data: {'fcm_token': fcmToken, 'device_type': deviceType},
+      );
+
+      if (kDebugMode) {
+        print('FCM token registered on backend ($deviceType)');
+      }
+    } catch (e) {
+      // Non-critical — don't crash the app if registration fails.
+      // The token will be retried on next app launch or refresh.
+      if (kDebugMode) {
+        print('Failed to register FCM token on backend: $e');
+      }
+    }
   }
 
   /// Get FCM token safely, handling iOS APNS token availability.

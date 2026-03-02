@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import '../api_client.dart';
 import '../models/booking_request_model.dart';
 import '../models/booking_response_model.dart';
+import '../../config/app_config.dart';
 
 /// Result for booking creation.
 class BookingResult {
@@ -108,8 +109,11 @@ class BookingsRepository {
     }
   }
 
-  /// Get user's bookings.
+  /// Get user's bookings. Returns empty list when bookings feature is disabled.
   Future<BookingsListResult> getUserBookings() async {
+    if (!AppConfig.enableBookings) {
+      return const BookingsListResult(success: true);
+    }
     try {
       final response = await _client.get('/me/bookings/');
 

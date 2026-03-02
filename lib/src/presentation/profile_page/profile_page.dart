@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:restaurant/l10n/gen/app_localizations.dart';
 import 'package:provider/provider.dart';
+import '../../config/app_config.dart';
 import '../../domain/cashback/cashback_cubit.dart';
 import '../../domain/cashback/cashback_state.dart';
-import '../../data/repositories/transactions_repository.dart';
+import '../../data/repositories/wallet_repository.dart';
+import '../../data/models/wallet_transaction_model.dart';
 import '../../data/repositories/bookings_repository.dart';
 import '../../data/repositories/restaurants_repository.dart';
 import '../../data/models/booking_response_model.dart';
@@ -30,15 +32,16 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final _transactionsRepository = TransactionsRepository();
+  final _walletRepository = WalletRepository();
   final _bookingsRepository = BookingsRepository();
   final _restaurantsRepository = RestaurantsRepository();
   final _userRepository = UserRepository();
   final _cashbackCubit = CashbackCubit();
   late Future<UserModel> _userFuture;
+  String _userName = '';
   String? _fcmToken;
 
-  List<Transaction> _transactions = [];
+  List<WalletTransaction> _transactions = [];
   bool _isLoadingTransactions = true;
 
   List<BookingResponse> _bookings = [];
@@ -48,9 +51,16 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    _userFuture = _userRepository.getMe();
+    _userFuture = _userRepository.getMe().then((user) {
+      if (mounted) {
+        setState(() {
+          _userName = (user.fullName?.split(' ').first) ?? '';
+        });
+      }
+      return user;
+    });
     _loadTransactions();
-    _loadBookings();
+    if (AppConfig.enableBookings) _loadBookings();
     _loadFcmToken();
     _cashbackCubit.loadBalance();
   }
@@ -71,15 +81,15 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadTransactions() async {
-    final result = await _transactionsRepository.getTransactions();
+    final result = await _walletRepository.getTransactions();
     if (!mounted) return;
 
     setState(() {
       _isLoadingTransactions = false;
-      if (result.success) {
-        _transactions = result.transactions;
-        // Sort by date desc
-        _transactions.sort((a, b) => b.date.compareTo(a.date));
+      if (result.success && result.data != null) {
+        _transactions = result.data!.transactions;
+        // Sort by date desc (newest first)
+        _transactions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       }
     });
   }
@@ -211,9 +221,11 @@ class _ProfilePageState extends State<ProfilePage> {
               // Stats summary
               _buildStatsSummary(),
               const SizedBox(height: 24),
-              // Bookings list
-              _buildBookingsList(),
-              const SizedBox(height: 24),
+              // Bookings list (only when feature is enabled)
+              if (AppConfig.enableBookings) ...[
+                _buildBookingsList(),
+                const SizedBox(height: 24),
+              ],
               // Transaction history
               _buildTransactionHistory(),
               const SizedBox(height: 32),
@@ -277,6 +289,7 @@ class _ProfilePageState extends State<ProfilePage> {
       child: BlocBuilder<CashbackCubit, CashbackState>(
         bloc: _cashbackCubit,
         builder: (context, state) {
+          final l10n = AppLocalizations.of(context)!;
           return Column(
             children: [
               // Wallet card
@@ -318,7 +331,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Marsilino Cashback',
+                          l10n.cashbackWallet(
+                            _userName.isNotEmpty ? _userName : 'You',
+                          ),
                           style: kSubtitleStyle.copyWith(
                             color: Colors.white.withValues(alpha: 0.9),
                             fontWeight: FontWeight.w500,
@@ -328,7 +343,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 20),
                     Text(
-                      'Balance',
+                      l10n.balance,
                       style: kBodyStyle.copyWith(
                         color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 13,
@@ -355,7 +370,9 @@ class _ProfilePageState extends State<ProfilePage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          '+UZS ${_formatBalance(state.lastAddedAmount)} recent',
+                          l10n.recentCashback(
+                            _formatBalance(state.lastAddedAmount),
+                          ),
                           style: kBodyStyle.copyWith(
                             color: Colors.white,
                             fontSize: 12,
@@ -381,9 +398,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               _cashbackCubit.state.errorMessage == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: const Text(
-                                  'Balance transferred to your card!',
-                                ),
+                                content: Text(l10n.transferSuccess),
                                 backgroundColor: kSuccess,
                                 behavior: SnackBarBehavior.floating,
                                 shape: RoundedRectangleBorder(
@@ -418,7 +433,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         )
                       : Text(
-                          'Transfer to Card',
+                          l10n.transferToCard,
                           style: kSubtitleStyle.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -645,10 +660,10 @@ class _ProfilePageState extends State<ProfilePage> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final totalSaved = _transactions.fold<double>(
-      0,
-      (sum, t) => sum + t.cashbackAmount,
-    );
+    // Sum only cashback-type transactions
+    final totalSaved = _transactions
+        .where((t) => t.isCashback)
+        .fold<double>(0, (sum, t) => sum + t.amount);
 
     return Row(
       children: [
@@ -737,7 +752,15 @@ class _ProfilePageState extends State<ProfilePage> {
   // Date formatting might need locale, but for now I leave it as is or could use DateFormat from intl later.
   // I will just use existing logic for item, as labels "Saved", "Cashback" are implicit in UI.
 
-  Widget _buildTransactionItem(Transaction transaction) {
+  Widget _buildTransactionItem(WalletTransaction transaction) {
+    final isCashback = transaction.isCashback;
+    final color = isCashback ? Colors.green : kPrimary;
+    final icon = isCashback
+        ? Icons.add_circle_outline
+        : Icons.arrow_circle_up_outlined;
+    final amountPrefix = isCashback ? '+' : '-';
+    final typeLabel = isCashback ? 'Cashback' : 'Transfer';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -746,113 +769,76 @@ class _ProfilePageState extends State<ProfilePage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [kCardShadow],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          // Header row
-          Row(
+          // Icon
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(width: 14),
+          // Description and date
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  transaction.restaurantName ??
+                      transaction.description ??
+                      typeLabel,
+                  style: kBodyStyle.copyWith(fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _formatDate(transaction.createdAt),
+                  style: kBodyStyle.copyWith(
+                    fontSize: 12,
+                    color: kTextSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Amount
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // Icon
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.check_circle_outline,
-                  color: Colors.green,
-                  size: 22,
+              Text(
+                '$amountPrefix${_formatNumber(transaction.amount.round())} UZS',
+                style: kBodyStyle.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
                 ),
               ),
-              const SizedBox(width: 14),
-              // Restaurant name and date
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      transaction.restaurantName,
-                      style: kBodyStyle.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _formatDate(transaction.date),
-                      style: kBodyStyle.copyWith(
-                        fontSize: 12,
-                        color: kTextSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Cashback badge
+              const SizedBox(height: 2),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  '-${transaction.cashbackPercent.round()}%',
+                  typeLabel,
                   style: kBodyStyle.copyWith(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          // Amount details row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Original
-              _buildAmountColumn(
-                'Original',
-                '${_formatNumber(transaction.amount.round())} UZS',
-                kTextSecondary,
-              ),
-              // Saved
-              _buildAmountColumn(
-                'Saved',
-                '-${_formatNumber(transaction.cashbackAmount.round())} UZS',
-                Colors.green,
-              ),
-              // Final
-              _buildAmountColumn(
-                'Final',
-                '${_formatNumber(transaction.finalAmount.round())} UZS',
-                kTextPrimary,
-              ),
-            ],
-          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildAmountColumn(String label, String value, Color valueColor) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          label,
-          style: kBodyStyle.copyWith(fontSize: 11, color: kTextSecondary),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: kBodyStyle.copyWith(
-            fontSize: 12,
-            color: valueColor,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
     );
   }
 
@@ -911,6 +897,9 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildBookingsList() {
+    // Safety guard — should not be called when flag is off, but be defensive.
+    if (!AppConfig.enableBookings) return const SizedBox.shrink();
+
     if (_isLoadingBookings) {
       return const SizedBox(
         height: 100,

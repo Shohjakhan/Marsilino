@@ -46,16 +46,6 @@ class _MapPageState extends State<MapPage> {
   static const _defaultCenter = Point(latitude: 41.2995, longitude: 69.2401);
   static const _defaultZoom = 13.0;
 
-  /// Available filter chips.
-  static const List<String> _filterOptions = [
-    'Family',
-    'Bars',
-    'Korean',
-    'Halal',
-    'Italian',
-    'Fast Food',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -248,20 +238,7 @@ class _MapPageState extends State<MapPage> {
       MaterialPageRoute(
         builder: (context) => RestaurantPage(
           restaurantId: restaurant.id,
-          initialData: RestaurantData(
-            name: restaurant.name,
-            description: restaurant.description ?? '',
-            address: restaurant.locationText ?? '',
-            workingHours: restaurant.workingHours ?? '',
-            phone: restaurant.phone ?? '',
-            rating: 4.5,
-            tags: restaurant.tagsList,
-            galleryImages: restaurant.galleryImages,
-            logoUrl: restaurant.logo,
-            cashback: restaurant.cashbackText,
-            instagram: restaurant.instagram,
-            telegram: restaurant.telegram,
-          ),
+          initialRestaurant: restaurant,
         ),
       ),
     );
@@ -341,6 +318,9 @@ class _MapPageState extends State<MapPage> {
             final activeFilters = state is RestaurantsLoaded
                 ? state.activeFilters
                 : <String>{};
+            final availableTags = state is RestaurantsLoaded
+                ? state.availableTags
+                : <String>[];
 
             return Stack(
               children: [
@@ -349,7 +329,7 @@ class _MapPageState extends State<MapPage> {
                   top: 0,
                   left: 0,
                   right: 0,
-                  child: _buildTopOverlay(activeFilters),
+                  child: _buildTopOverlay(activeFilters, availableTags),
                 ),
                 if (_error != null && !_isLoading)
                   Positioned(
@@ -454,7 +434,10 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  Widget _buildTopOverlay(Set<String> activeFilters) {
+  Widget _buildTopOverlay(
+    Set<String> activeFilters,
+    List<String> availableTags,
+  ) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -474,7 +457,7 @@ class _MapPageState extends State<MapPage> {
         children: [
           _buildSearchBar(),
           const SizedBox(height: 12),
-          _buildFilterChips(activeFilters),
+          _buildFilterChips(activeFilters, availableTags),
         ],
       ),
     );
@@ -514,14 +497,17 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  Widget _buildFilterChips(Set<String> activeFilters) {
+  Widget _buildFilterChips(
+    Set<String> activeFilters,
+    List<String> availableTags,
+  ) {
     return SizedBox(
       height: 40,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: _filterOptions.length,
+        itemCount: availableTags.length,
         itemBuilder: (context, index) {
-          final filter = _filterOptions[index];
+          final filter = availableTags[index];
           final isSelected = activeFilters.contains(filter);
 
           return Padding(

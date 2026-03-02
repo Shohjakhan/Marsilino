@@ -271,4 +271,124 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gettingLocation => 'Получение местоположения...';
+
+  @override
+  String cashbackWallet(String name) {
+    return 'Кэшбэк – $name';
+  }
+
+  @override
+  String get balance => 'Баланс';
+
+  @override
+  String get transferToCard => 'Перевести на карту';
+
+  @override
+  String recentCashback(String amount) {
+    return '+$amount UZS недавно';
+  }
+
+  @override
+  String get pointAtQr => 'Наведите на QR-код чека';
+
+  @override
+  String scanReceiptFor(String name) {
+    return 'Сканируйте чек $name';
+  }
+
+  @override
+  String get scanFiscalReceipt => 'Сканируйте чек для получения кэшбэка';
+
+  @override
+  String cashbackRate(int pct) {
+    return 'Ставка кэшбэка: $pct%';
+  }
+
+  @override
+  String get fetchingReceipt => 'Загрузка чека...';
+
+  @override
+  String get verifyingFiscal => 'Проверка через фискальную службу';
+
+  @override
+  String get receiptVerified => 'Чек подтверждён';
+
+  @override
+  String get restaurantLabel => 'Ресторан';
+
+  @override
+  String get receiptNumberLabel => 'Чек №';
+
+  @override
+  String get dateLabel => 'Дата';
+
+  @override
+  String get totalPaidLabel => 'Итого оплачено';
+
+  @override
+  String get cashbackEarned => 'Получен кэшбэк';
+
+  @override
+  String get redeemCashbackBtn => 'Активировать кэшбэк';
+
+  @override
+  String get cashbackRedeemed => 'Кэшбэк активирован!';
+
+  @override
+  String get scanAnother => 'Сканировать ещё';
+
+  @override
+  String get scanAgain => 'Повторить сканирование';
+
+  @override
+  String get cashbackAddedWallet => 'Кэшбэк добавлен в кошелёк!';
+
+  @override
+  String cashbackPctFrom(int pct, String name) {
+    return '$pct% кэшбэк от $name';
+  }
+
+  @override
+  String get transferSuccess => 'Баланс переведён на карту!';
+
+  @override
+  String get rateYourExperience => 'Оцените свой опыт';
+
+  @override
+  String rateExperienceSub(String name) {
+    return 'Как прошёл ваш визит в $name?';
+  }
+
+  @override
+  String get submitRating => 'Отправить оценку';
+
+  @override
+  String get skipRating => 'Пропустить';
+
+  @override
+  String get ratingThanks => 'Спасибо за ваш отзыв!';
+
+  @override
+  String get noFavoritesYet => 'Нет избранных';
+
+  @override
+  String get noFavoritesSub =>
+      'Нажмите на сердечко у любого ресторана, чтобы сохранить его';
+
+  @override
+  String get exploreRestaurants => 'Смотреть рестораны';
+
+  @override
+  String get removedFromFavorites => 'Удалено из избранного';
+
+  @override
+  String get logoutConfirm => 'Вы уверены, что хотите выйти?';
+
+  @override
+  String get liked => 'Избранное';
+
+  @override
+  String restaurantsCount(int count) {
+    return '$count ресторанов';
+  }
 }

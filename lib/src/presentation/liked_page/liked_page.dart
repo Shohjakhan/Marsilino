@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:restaurant/l10n/gen/app_localizations.dart';
 import '../../data/models/restaurant.dart';
 import '../../data/repositories/restaurants_repository.dart';
 import '../../theme/app_theme.dart';
 import '../common/primary_button.dart';
+import '../common/restaurant_card.dart';
 import '../restaurant_page/restaurant_page.dart';
 
 /// Liked restaurants page showing all favorited restaurants.
@@ -46,7 +48,7 @@ class _LikedPageState extends State<LikedPage> {
     });
   }
 
-  Future<void> _removeLike(int index) async {
+  Future<void> _removeLike(int index, AppLocalizations l10n) async {
     final restaurant = _likedRestaurants[index];
 
     // Optimistic removal
@@ -54,7 +56,6 @@ class _LikedPageState extends State<LikedPage> {
       _likedRestaurants.removeAt(index);
     });
 
-    // Call API
     final result = await _restaurantsRepository.unlikeRestaurant(restaurant.id);
 
     if (!mounted) return;
@@ -79,7 +80,7 @@ class _LikedPageState extends State<LikedPage> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Removed from favorites'),
+          content: Text(l10n.removedFromFavorites),
           backgroundColor: kPrimary,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -97,38 +98,50 @@ class _LikedPageState extends State<LikedPage> {
       MaterialPageRoute(
         builder: (context) => RestaurantPage(
           restaurantId: restaurant.id,
-          initialData: RestaurantData.fromApiModel(restaurant),
+          initialRestaurant: restaurant,
         ),
       ),
     );
   }
 
   void _goToHome() {
-    // Navigate to home tab
-    // In a real app, this would use a navigation controller
-    // For now, just pop if we're not at root
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
     }
   }
 
+  RestaurantCardData _toCardData(Restaurant r) {
+    return RestaurantCardData(
+      name: r.name,
+      address: r.locationText ?? '',
+      workingHours: r.workingHours ?? '',
+      logoUrl: r.logo,
+      tags: r.tagsList,
+      cashback: r.cashbackText,
+      latitude: r.latitude,
+      longitude: r.longitude,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: kBackground,
       body: SafeArea(
         bottom: false,
         child: Column(
           children: [
-            _buildHeader(),
+            _buildHeader(l10n),
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _error != null
-                  ? SingleChildScrollView(child: _buildErrorState())
+                  ? SingleChildScrollView(child: _buildErrorState(l10n))
                   : _likedRestaurants.isEmpty
-                  ? SingleChildScrollView(child: _buildEmptyState())
-                  : _buildList(),
+                  ? SingleChildScrollView(child: _buildEmptyState(l10n))
+                  : _buildList(l10n),
             ),
           ],
         ),
@@ -136,7 +149,7 @@ class _LikedPageState extends State<LikedPage> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -158,11 +171,11 @@ class _LikedPageState extends State<LikedPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Liked', style: kTitleStyle.copyWith(fontSize: 24)),
+                    Text(l10n.liked, style: kTitleStyle.copyWith(fontSize: 24)),
                     Text(
                       _isLoading
-                          ? 'Loading...'
-                          : '${_likedRestaurants.length} restaurants',
+                          ? l10n.loading
+                          : l10n.restaurantsCount(_likedRestaurants.length),
                       style: kBodyStyle.copyWith(
                         color: kTextSecondary,
                         fontSize: 14,
@@ -178,7 +191,7 @@ class _LikedPageState extends State<LikedPage> {
     );
   }
 
-  Widget _buildErrorState() {
+  Widget _buildErrorState(AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -196,7 +209,7 @@ class _LikedPageState extends State<LikedPage> {
           ),
           const SizedBox(height: 24),
           PrimaryButton(
-            label: 'Retry',
+            label: l10n.tryAgain,
             onPressed: _loadLikedRestaurants,
             fullWidth: false,
           ),
@@ -205,7 +218,7 @@ class _LikedPageState extends State<LikedPage> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -232,7 +245,7 @@ class _LikedPageState extends State<LikedPage> {
           ),
           const SizedBox(height: 24),
           Text(
-            'No favorites yet',
+            l10n.noFavoritesYet,
             style: kSubtitleStyle.copyWith(
               color: kTextSecondary,
               fontWeight: FontWeight.w600,
@@ -242,7 +255,7 @@ class _LikedPageState extends State<LikedPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 48),
             child: Text(
-              'Tap the heart icon on any restaurant to save it here',
+              l10n.noFavoritesSub,
               style: kBodyStyle.copyWith(
                 color: kTextSecondary.withValues(alpha: 0.7),
                 fontSize: 14,
@@ -252,7 +265,7 @@ class _LikedPageState extends State<LikedPage> {
           ),
           const SizedBox(height: 32),
           PrimaryButton(
-            label: 'Explore Restaurants',
+            label: l10n.exploreRestaurants,
             onPressed: _goToHome,
             fullWidth: false,
           ),
@@ -261,7 +274,7 @@ class _LikedPageState extends State<LikedPage> {
     );
   }
 
-  Widget _buildList() {
+  Widget _buildList(AppLocalizations l10n) {
     return RefreshIndicator(
       onRefresh: _loadLikedRestaurants,
       color: kPrimary,
@@ -273,146 +286,41 @@ class _LikedPageState extends State<LikedPage> {
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 16),
-            child: _LikedRestaurantCard(
-              restaurant: restaurant,
-              onTap: () => _navigateToRestaurant(restaurant),
-              onRemove: () => _removeLike(index),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Same rich card as home page
+                RestaurantCard(
+                  data: _toCardData(restaurant),
+                  onTap: () => _navigateToRestaurant(restaurant),
+                ),
+                // Unlike button overlay (top-left)
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: GestureDetector(
+                    onTap: () => _removeLike(index, l10n),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: kError.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: kError.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.favorite,
+                        color: kError,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-/// Restaurant card with remove option.
-class _LikedRestaurantCard extends StatelessWidget {
-  final Restaurant restaurant;
-  final VoidCallback onTap;
-  final VoidCallback onRemove;
-
-  const _LikedRestaurantCard({
-    required this.restaurant,
-    required this.onTap,
-    required this.onRemove,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: kCardBg,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const [kCardShadow],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              _buildLogo(),
-              const SizedBox(width: 14),
-              Expanded(child: _buildInfo()),
-              _buildRemoveButton(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLogo() {
-    return Container(
-      width: 60,
-      height: 60,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: restaurant.logo != null
-            ? Image.network(
-                restaurant.logo!,
-                fit: BoxFit.cover,
-                errorBuilder: (ctx, _, __) => _buildPlaceholder(),
-              )
-            : _buildPlaceholder(),
-      ),
-    );
-  }
-
-  Widget _buildPlaceholder() {
-    return Container(
-      color: kPrimary.withValues(alpha: 0.1),
-      child: const Icon(Icons.restaurant, color: kPrimary, size: 28),
-    );
-  }
-
-  Widget _buildInfo() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          restaurant.name,
-          style: kSubtitleStyle.copyWith(fontWeight: FontWeight.w600),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 4),
-        if (restaurant.locationText != null)
-          Row(
-            children: [
-              Icon(Icons.location_on_outlined, size: 14, color: kTextSecondary),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  restaurant.locationText!,
-                  style: kBodyStyle.copyWith(
-                    color: kTextSecondary,
-                    fontSize: 12,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        const SizedBox(height: 6),
-        if (restaurant.cashbackPercentage != null &&
-            restaurant.cashbackPercentage! > 0)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: kSecondaryLight,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              '${restaurant.cashbackPercentage!.round()}% CASHBACK',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildRemoveButton() {
-    return IconButton(
-      onPressed: onRemove,
-      icon: const Icon(Icons.favorite, color: kError),
-      style: IconButton.styleFrom(
-        backgroundColor: kError.withValues(alpha: 0.1),
       ),
     );
   }

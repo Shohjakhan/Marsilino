@@ -22,15 +22,22 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  /// Pages for each tab.
+  // Pages are stored as fields so their state (and initState) isn't reset
+  // every time the tab index changes. Only _mapPage is mutable because it
+  // updates when a NavigateToMapNotification is dispatched.
   Widget _mapPage = const MapPage();
+  late final List<Widget> _pages;
 
-  List<Widget> get _pages => [
-    const HomePage(),
-    _mapPage,
-    const LikedPage(),
-    const ProfilePage(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      const HomePage(),
+      _mapPage,
+      const LikedPage(),
+      const ProfilePage(),
+    ];
+  }
 
   void _onTabTapped(int index) {
     setState(() {
@@ -79,8 +86,9 @@ class _MainShellState extends State<MainShell> {
             initialLat: notification.latitude,
             initialLng: notification.longitude,
             restaurantId: notification.restaurantId,
-            key: UniqueKey(), // Force rebuild to trigger jump
+            key: UniqueKey(),
           );
+          _pages[1] = _mapPage;
         });
         return true;
       },

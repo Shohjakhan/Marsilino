@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../data/repositories/transactions_repository.dart';
+import '../../data/models/wallet_transaction_model.dart';
 
 /// Transactions state.
 sealed class TransactionsState extends Equatable {
@@ -16,7 +16,7 @@ class TransactionsInitial extends TransactionsState {
 
 /// Loading transactions.
 class TransactionsLoading extends TransactionsState {
-  final List<Transaction> cachedTransactions;
+  final List<WalletTransaction> cachedTransactions;
   final bool isRefreshing;
 
   const TransactionsLoading({
@@ -30,7 +30,7 @@ class TransactionsLoading extends TransactionsState {
 
 /// Transactions loaded successfully.
 class TransactionsLoaded extends TransactionsState {
-  final List<Transaction> transactions;
+  final List<WalletTransaction> transactions;
 
   const TransactionsLoaded({required this.transactions});
 
@@ -41,7 +41,7 @@ class TransactionsLoaded extends TransactionsState {
 /// Error loading transactions.
 class TransactionsError extends TransactionsState {
   final String message;
-  final List<Transaction> cachedTransactions;
+  final List<WalletTransaction> cachedTransactions;
 
   const TransactionsError({
     required this.message,

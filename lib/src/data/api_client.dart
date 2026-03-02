@@ -62,7 +62,7 @@ class ApiClient {
 
       final response = await Dio(
         BaseOptions(baseUrl: AppConfig.apiUrl),
-      ).post('/token/refresh/', data: {'refresh': refreshToken});
+      ).post('token/refresh/', data: {'refresh': refreshToken});
 
       if (response.statusCode == 200) {
         final newAccessToken = response.data?['access'] as String?;

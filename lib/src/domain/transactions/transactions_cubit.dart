@@ -1,20 +1,21 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../data/repositories/transactions_repository.dart';
+import '../../data/models/wallet_transaction_model.dart';
+import '../../data/repositories/wallet_repository.dart';
 import 'transactions_state.dart';
 
 export 'transactions_state.dart';
 
-/// Cubit for managing transaction history.
+/// Cubit for managing wallet transaction history.
 class TransactionsCubit extends Cubit<TransactionsState> {
-  final TransactionsRepository _repository;
+  final WalletRepository _walletRepository;
   static const _networkTimeout = Duration(seconds: 8);
 
   // In-memory cache
-  List<Transaction> _cachedTransactions = [];
+  List<WalletTransaction> _cachedTransactions = [];
 
-  TransactionsCubit({TransactionsRepository? repository})
-    : _repository = repository ?? TransactionsRepository(),
+  TransactionsCubit({WalletRepository? walletRepository})
+    : _walletRepository = walletRepository ?? WalletRepository(),
       super(const TransactionsInitial());
 
   /// Load transactions (shows cache while loading if available).
@@ -46,20 +47,20 @@ class TransactionsCubit extends Cubit<TransactionsState> {
     await _fetchTransactions();
   }
 
-  /// Internal fetch logic.
+  /// Internal fetch logic — calls GET /v1/wallet/transactions.
   Future<void> _fetchTransactions() async {
     try {
-      final result = await _repository.getTransactions().timeout(
+      final result = await _walletRepository.getTransactions().timeout(
         _networkTimeout,
         onTimeout: () {
           throw TimeoutException('Network request timed out');
         },
       );
 
-      if (result.success) {
-        _cachedTransactions = result.transactions;
+      if (result.success && result.data != null) {
+        _cachedTransactions = result.data!.transactions;
         // Sort by date descending (newest first)
-        _cachedTransactions.sort((a, b) => b.date.compareTo(a.date));
+        _cachedTransactions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
         emit(TransactionsLoaded(transactions: _cachedTransactions));
       } else {
         emit(
@@ -87,7 +88,7 @@ class TransactionsCubit extends Cubit<TransactionsState> {
   }
 
   /// Get cached transactions.
-  List<Transaction> get cachedTransactions =>
+  List<WalletTransaction> get cachedTransactions =>
       List.unmodifiable(_cachedTransactions);
 
   /// Check if there are any transactions.

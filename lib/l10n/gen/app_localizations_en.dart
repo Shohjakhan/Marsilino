@@ -271,4 +271,124 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gettingLocation => 'Getting location...';
+
+  @override
+  String cashbackWallet(String name) {
+    return 'Cashback – $name';
+  }
+
+  @override
+  String get balance => 'Balance';
+
+  @override
+  String get transferToCard => 'Transfer to Card';
+
+  @override
+  String recentCashback(String amount) {
+    return '+UZS $amount recent';
+  }
+
+  @override
+  String get pointAtQr => 'Point at receipt QR code';
+
+  @override
+  String scanReceiptFor(String name) {
+    return 'Scan your $name receipt';
+  }
+
+  @override
+  String get scanFiscalReceipt => 'Scan the fiscal receipt to earn cashback';
+
+  @override
+  String cashbackRate(int pct) {
+    return 'Cashback rate: $pct%';
+  }
+
+  @override
+  String get fetchingReceipt => 'Fetching receipt...';
+
+  @override
+  String get verifyingFiscal => 'Verifying with fiscal service';
+
+  @override
+  String get receiptVerified => 'Receipt Verified';
+
+  @override
+  String get restaurantLabel => 'Restaurant';
+
+  @override
+  String get receiptNumberLabel => 'Receipt #';
+
+  @override
+  String get dateLabel => 'Date';
+
+  @override
+  String get totalPaidLabel => 'Total Paid';
+
+  @override
+  String get cashbackEarned => 'Cashback Earned';
+
+  @override
+  String get redeemCashbackBtn => 'Redeem Cashback';
+
+  @override
+  String get cashbackRedeemed => 'Cashback Redeemed!';
+
+  @override
+  String get scanAnother => 'Scan Another';
+
+  @override
+  String get scanAgain => 'Scan Again';
+
+  @override
+  String get cashbackAddedWallet => 'Cashback added to your wallet!';
+
+  @override
+  String cashbackPctFrom(int pct, String name) {
+    return '$pct% cashback from $name';
+  }
+
+  @override
+  String get transferSuccess => 'Balance transferred to your card!';
+
+  @override
+  String get rateYourExperience => 'Rate Your Experience';
+
+  @override
+  String rateExperienceSub(String name) {
+    return 'How was your visit to $name?';
+  }
+
+  @override
+  String get submitRating => 'Submit Rating';
+
+  @override
+  String get skipRating => 'Skip';
+
+  @override
+  String get ratingThanks => 'Thank you for your feedback!';
+
+  @override
+  String get noFavoritesYet => 'No favorites yet';
+
+  @override
+  String get noFavoritesSub =>
+      'Tap the heart icon on any restaurant to save it here';
+
+  @override
+  String get exploreRestaurants => 'Explore Restaurants';
+
+  @override
+  String get removedFromFavorites => 'Removed from favorites';
+
+  @override
+  String get logoutConfirm => 'Are you sure you want to log out?';
+
+  @override
+  String get liked => 'Liked';
+
+  @override
+  String restaurantsCount(int count) {
+    return '$count restaurants';
+  }
 }

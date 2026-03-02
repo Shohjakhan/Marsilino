@@ -13,7 +13,7 @@ class UserRepository {
 
   Future<UserModel> getMe() async {
     try {
-      final response = await _client.get('/v1/me');
+      final response = await _client.get('v1/me/');
       if (response.statusCode == 200) {
         final body = response.data;
         Map<String, dynamic> userData;
@@ -57,7 +57,7 @@ class UserRepository {
       if (fullName != null) data['full_name'] = fullName;
       if (language != null) data['language'] = language;
 
-      final response = await _client.patch('/v1/me', data: data);
+      final response = await _client.patch('v1/me/', data: data);
       if (response.statusCode == 200) {
         final body = response.data;
         Map<String, dynamic> userData;
