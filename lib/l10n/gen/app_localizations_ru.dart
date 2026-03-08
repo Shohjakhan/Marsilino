@@ -284,6 +284,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get transferToCard => 'Перевести на карту';
 
   @override
+  String get enterCardNumber => 'Пожалуйста, введите 16-значный номер карты.';
+
+  @override
+  String get cardNumberLengthError => 'Номер карты должен содержать 16 цифр.';
+
+  @override
+  String get transferFailed => 'Ошибка перевода';
+
+  @override
   String recentCashback(String amount) {
     return '+$amount UZS недавно';
   }
@@ -390,5 +399,76 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String restaurantsCount(int count) {
     return '$count ресторанов';
+  }
+
+  @override
+  String get viewOnMap => 'Показать на карте';
+
+  @override
+  String get people => 'Человек';
+
+  @override
+  String get signUpTitle => 'Регистрация';
+
+  @override
+  String get failedUpdateFavorite => 'Не удалось обновить избранное';
+
+  @override
+  String callingSimulation(String phone) {
+    return 'Звонок $phone (симуляция)';
+  }
+
+  @override
+  String openingSocialSimulation(String platform, String handle) {
+    return 'Открытие $platform: $handle (симуляция)';
+  }
+
+  @override
+  String openingMapLink(String link) {
+    return 'Открытие карты: $link';
+  }
+
+  @override
+  String get errorMissingRestaurantId => 'Ошибка: отсутствует ID ресторана';
+
+  @override
+  String get failedLoadRestaurant => 'Не удалось загрузить ресторан';
+
+  @override
+  String get shareSimulation => 'Поделиться (симуляция)';
+
+  @override
+  String get reportLoggedConsole => 'Отчет сохранен';
+
+  @override
+  String get retryButton => 'Повторить';
+
+  @override
+  String get failedCreateBooking => 'Не удалось создать бронирование';
+
+  @override
+  String get bookTableTitle => 'Забронировать стол';
+
+  @override
+  String get bookTableBtn => 'Забронировать';
+
+  @override
+  String get failedRemoveFavorite => 'Не удалось удалить из избранного';
+
+  @override
+  String get tokenCopied => 'Токен скопирован';
+
+  @override
+  String get failedLoadProfile => 'Не удалось загрузить профиль';
+
+  @override
+  String get defaultUser => 'Пользователь';
+
+  @override
+  String get upcomingReservations => 'Предстоящие бронирования';
+
+  @override
+  String bookingRef(String id) {
+    return 'Бронь: #$id';
   }
 }

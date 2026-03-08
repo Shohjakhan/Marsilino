@@ -91,4 +91,43 @@ class UserRepository {
       throw Exception('Unexpected error: $e');
     }
   }
+
+  /// Adds a new card for the user.
+  /// Uses GET /v1/me/card/add/
+  Future<void> addCard({
+    required String phoneNumber,
+    required String cardNumber,
+  }) async {
+    try {
+      final response = await _client.get(
+        'v1/me/card/add/',
+        queryParameters: {
+          'phone_number': phoneNumber,
+          'card_number': cardNumber,
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final body = response.data;
+        if (body is Map<String, dynamic> && body['success'] == true) {
+          return; // Success
+        }
+        throw Exception(
+          (body is Map ? body['message'] : null) ?? 'Failed to add card',
+        );
+      }
+      throw Exception('Failed to add card: ${response.statusCode}');
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw Exception('Session expired');
+      }
+      String msg = e.message ?? 'Unknown error';
+      if (e.response?.data is Map) {
+        msg = e.response!.data['message'] ?? msg;
+      }
+      throw Exception('Failed to add card: $msg');
+    } catch (e) {
+      throw Exception('Unexpected error: $e');
+    }
+  }
 }

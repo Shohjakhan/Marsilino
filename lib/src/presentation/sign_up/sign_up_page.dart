@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/auth/auth_cubit.dart';
 import '../../theme/app_theme.dart';
+import 'package:restaurant/l10n/gen/app_localizations.dart';
 import '../common/primary_button.dart';
 import '../sign_in/otp_page.dart';
 
@@ -42,7 +43,7 @@ class _SignUpPageState extends State<SignUpPage> {
     return null;
   }
 
-  void _handleSendCode() {
+  Future<void> _handleSendCode() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     // Use Cubit to request OTP
@@ -51,13 +52,14 @@ class _SignUpPageState extends State<SignUpPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return BlocConsumer<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthOtpRequested) {
           // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Code sent successfully'),
+              content: Text(l10n.codeSentSuccess),
               backgroundColor: kPrimary,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -98,7 +100,7 @@ class _SignUpPageState extends State<SignUpPage> {
         return Scaffold(
           backgroundColor: kBackground,
           appBar: AppBar(
-            title: Text('Sign Up', style: kTitleStyle),
+            title: Text(l10n.signUpTitle, style: kTitleStyle),
             backgroundColor: Colors.transparent,
             elevation: 0,
             leading: IconButton(

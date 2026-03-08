@@ -130,7 +130,7 @@ class _QrScanPageState extends State<QrScanPage> {
         ),
         body: BlocConsumer<QrCubit, QrState>(
           listener: (context, state) {
-            if (state.redeemed) {
+            if (state.redeemed && state.receipt?.alreadyRedeemed == false) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(l10n.cashbackAddedWallet),
@@ -493,7 +493,7 @@ class _QrScanPageState extends State<QrScanPage> {
           ),
           const SizedBox(height: 32),
 
-          // Redeem button
+          // Redeem button / Success State
           if (!state.redeemed)
             PrimaryButton(
               label: l10n.redeemCashbackBtn,
@@ -506,19 +506,37 @@ class _QrScanPageState extends State<QrScanPage> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: kSuccess.withValues(alpha: 0.1),
+                    color:
+                        (receipt.alreadyRedeemed ? kSecondaryLight : kSuccess)
+                            .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: kSuccess.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color:
+                          (receipt.alreadyRedeemed ? kSecondaryLight : kSuccess)
+                              .withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.check_circle, color: kSuccess, size: 20),
+                      Icon(
+                        receipt.alreadyRedeemed
+                            ? Icons.info_outline
+                            : Icons.check_circle,
+                        color: receipt.alreadyRedeemed
+                            ? kSecondaryLight
+                            : kSuccess,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Text(
-                        l10n.cashbackRedeemed,
+                        receipt.alreadyRedeemed
+                            ? 'Receipt already redeemed'
+                            : l10n.cashbackRedeemed,
                         style: kSubtitleStyle.copyWith(
-                          color: kSuccess,
+                          color: receipt.alreadyRedeemed
+                              ? kSecondaryLight
+                              : kSuccess,
                           fontWeight: FontWeight.w600,
                         ),
                       ),

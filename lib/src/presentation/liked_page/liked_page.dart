@@ -68,7 +68,9 @@ class _LikedPageState extends State<LikedPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.error ?? 'Failed to remove from favorites'),
+          content: Text(
+            result.error ?? AppLocalizations.of(context)!.failedRemoveFavorite,
+          ),
           backgroundColor: kError,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -120,6 +122,7 @@ class _LikedPageState extends State<LikedPage> {
       cashback: r.cashbackText,
       latitude: r.latitude,
       longitude: r.longitude,
+      averageRating: r.averageRating,
     );
   }
 

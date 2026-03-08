@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:restaurant/l10n/gen/app_localizations.dart';
 import '../../config/app_config.dart';
 import '../../data/models/restaurant.dart';
@@ -87,10 +88,25 @@ class _RestaurantPageState extends State<RestaurantPage> {
           socialMedia: fetched.socialMedia ?? old?.socialMedia,
           menu: fetched.menu ?? old?.menu,
           menuUrl: fetched.menuUrl ?? old?.menuUrl,
+          menuImages: fetched.menuImages.isNotEmpty
+              ? fetched.menuImages
+              : (old?.menuImages ?? const []),
           locationLink: fetched.locationLink ?? old?.locationLink,
           locationText: (fetched.locationText?.isNotEmpty == true)
               ? fetched.locationText
               : old?.locationText,
+          locationDescriptionEn:
+              (fetched.locationDescriptionEn?.isNotEmpty == true)
+              ? fetched.locationDescriptionEn
+              : old?.locationDescriptionEn,
+          locationDescriptionRu:
+              (fetched.locationDescriptionRu?.isNotEmpty == true)
+              ? fetched.locationDescriptionRu
+              : old?.locationDescriptionRu,
+          locationDescriptionUz:
+              (fetched.locationDescriptionUz?.isNotEmpty == true)
+              ? fetched.locationDescriptionUz
+              : old?.locationDescriptionUz,
           cashbackPercentage:
               fetched.cashbackPercentage ?? old?.cashbackPercentage,
           tin: fetched.tin ?? old?.tin,
@@ -133,6 +149,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
   // ---------------------------------------------------------------------------
 
   Future<void> _toggleLike() async {
+    final l10n = AppLocalizations.of(context)!;
     if (widget.restaurantId == null || _isLikeLoading) return;
 
     final wasLiked = _isLiked;
@@ -154,7 +171,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.error ?? 'Failed to update favorite'),
+          content: Text(result.error ?? l10n.failedUpdateFavorite),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -167,11 +184,12 @@ class _RestaurantPageState extends State<RestaurantPage> {
   }
 
   void _openPhone() {
+    final l10n = AppLocalizations.of(context)!;
     final phone = _restaurant?.phone;
     if (phone == null || phone.isEmpty) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Calling $phone (simulation)'),
+        content: Text(l10n.callingSimulation(phone)),
         backgroundColor: kPrimary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -181,9 +199,10 @@ class _RestaurantPageState extends State<RestaurantPage> {
   }
 
   void _openSocial(String platform, String handle) {
+    final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Opening $platform: $handle (simulation)'),
+        content: Text(l10n.openingSocialSimulation(platform, handle)),
         backgroundColor: kPrimary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -193,34 +212,51 @@ class _RestaurantPageState extends State<RestaurantPage> {
   }
 
   void _showMenuPreview() {
-    final menuUrl = _restaurant?.menuUrl;
-    if (menuUrl == null) return;
+    if (_menuImages.isEmpty) return;
 
     showDialog(
       context: context,
-      builder: (context) => _MenuPreviewDialog(imageUrl: menuUrl),
+      builder: (context) => _MenuPreviewDialog(imageUrls: _menuImages),
     );
   }
 
   void _navigateToMap() {
+    final l10n = AppLocalizations.of(context)!;
     if (_restaurant == null) return;
 
-    Navigator.pop(context);
+    if (_restaurant!.latitude != null && _restaurant!.longitude != null) {
+      Navigator.pop(context);
 
-    NavigateToMapNotification(
-      latitude: _restaurant!.latitude,
-      longitude: _restaurant!.longitude,
-      restaurantId: widget.restaurantId ?? _restaurant!.id,
-    ).dispatch(context);
+      NavigateToMapNotification(
+        latitude: _restaurant!.latitude,
+        longitude: _restaurant!.longitude,
+        restaurantId: widget.restaurantId ?? _restaurant!.id,
+      ).dispatch(context);
+    } else if (_restaurant!.locationLink != null) {
+      // Typically we'd use url_launcher here.
+      // Using social simulation style to prevent crashing if uninstalled or unhandled.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.openingMapLink(_restaurant!.locationLink!)),
+          backgroundColor: kPrimary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+    }
   }
 
   void _redeemCashback() {
+    final l10n = AppLocalizations.of(context)!;
     if (_restaurant == null) return;
     final id = widget.restaurantId ?? _restaurant!.id;
     if (id.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error: Missing restaurant ID')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.errorMissingRestaurantId)));
       return;
     }
     Navigator.push(
@@ -241,13 +277,25 @@ class _RestaurantPageState extends State<RestaurantPage> {
 
   String get _name => _restaurant?.name ?? '';
   String get _description => _restaurant?.description ?? '';
-  String get _address => _restaurant?.locationText ?? '';
+  String _getAddress(BuildContext context) =>
+      _restaurant?.displayAddress(
+        Localizations.localeOf(context).languageCode,
+      ) ??
+      '';
   String get _workingHours => _restaurant?.workingHours ?? '';
   String get _phone => _restaurant?.phone ?? '';
   String? get _logoUrl => _restaurant?.logo;
-  String? get _menuImageUrl => _restaurant?.menuUrl;
+  List<String> get _menuImages {
+    final List<String> images = [];
+    if (_restaurant?.menuImages.isNotEmpty == true) {
+      images.addAll(_restaurant!.menuImages);
+    } else if (_restaurant?.menuUrl != null) {
+      images.add(_restaurant!.menuUrl!);
+    }
+    return images;
+  }
+
   String? get _cashbackText => _restaurant?.cashbackText;
-  String? get _locationLink => _restaurant?.locationLink;
   String? get _instagram => _restaurant?.instagram;
   String? get _telegram => _restaurant?.telegram;
   List<String> get _galleryImages => _restaurant?.galleryImages ?? const [];
@@ -261,12 +309,23 @@ class _RestaurantPageState extends State<RestaurantPage> {
     return match != null ? int.parse(match.group(1)!) : 0;
   }
 
+  bool get _hasLocationMap =>
+      (_restaurant?.latitude != null && _restaurant?.longitude != null) ||
+      _restaurant?.locationLink != null;
+  bool _hasContactInfo(BuildContext context) =>
+      _getAddress(context).isNotEmpty ||
+      _hasLocationMap ||
+      _phone.isNotEmpty ||
+      _instagram != null ||
+      _telegram != null;
+
   // ---------------------------------------------------------------------------
   // Build
   // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (_restaurant == null && _isLoading) {
       return Scaffold(
         backgroundColor: kBackground,
@@ -303,7 +362,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
             children: [
               Icon(Icons.error_outline, size: 64, color: kTextSecondary),
               const SizedBox(height: 16),
-              Text('Failed to load restaurant', style: kBodyStyle),
+              Text(l10n.failedLoadRestaurant, style: kBodyStyle),
             ],
           ),
         ),
@@ -331,15 +390,19 @@ class _RestaurantPageState extends State<RestaurantPage> {
               // Restaurant header
               SliverToBoxAdapter(child: _buildHeader()),
               // Description
-              SliverToBoxAdapter(child: _buildDescriptionCard()),
+              if (_description.isNotEmpty)
+                SliverToBoxAdapter(child: _buildDescriptionCard()),
               // Hashtags
-              SliverToBoxAdapter(child: _buildHashtagsCard()),
+              if (_tags.isNotEmpty)
+                SliverToBoxAdapter(child: _buildHashtagsCard()),
               // Working hours
-              SliverToBoxAdapter(child: _buildHoursCard()),
+              if (_workingHours.isNotEmpty)
+                SliverToBoxAdapter(child: _buildHoursCard()),
               // Contact info
-              SliverToBoxAdapter(child: _buildContactCard()),
+              if (_hasContactInfo(context))
+                SliverToBoxAdapter(child: _buildContactCard(context)),
               // Menu
-              if (_menuImageUrl != null)
+              if (_menuImages.isNotEmpty)
                 SliverToBoxAdapter(child: _buildMenuCard()),
               // Booking (behind feature flag)
               if (AppConfig.enableBookings)
@@ -382,6 +445,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
   }
 
   Widget _buildShareButton() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       margin: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -394,7 +458,7 @@ class _RestaurantPageState extends State<RestaurantPage> {
         onPressed: () {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Share (simulation)'),
+              content: Text(l10n.shareSimulation),
               backgroundColor: kPrimary,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -442,10 +506,20 @@ class _RestaurantPageState extends State<RestaurantPage> {
             ),
             child: ClipOval(
               child: _logoUrl != null
-                  ? Image.network(
-                      _logoUrl!,
+                  ? CachedNetworkImage(
+                      imageUrl: _logoUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(
+                      placeholder: (_, __) => const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: kPrimary,
+                          ),
+                        ),
+                      ),
+                      errorWidget: (_, __, ___) => const Icon(
                         Icons.restaurant,
                         size: 32,
                         color: kTextSecondary,
@@ -627,8 +701,9 @@ class _RestaurantPageState extends State<RestaurantPage> {
     );
   }
 
-  Widget _buildContactCard() {
+  Widget _buildContactCard(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final address = _getAddress(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: RoundedCard(
@@ -641,25 +716,22 @@ class _RestaurantPageState extends State<RestaurantPage> {
               style: kSubtitleStyle.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            // Address
-            if (_address.isNotEmpty) ...[
+            if (address.isNotEmpty) ...[
               GestureDetector(
                 onTap: _navigateToMap,
                 child: _buildContactRow(
                   icon: Icons.location_on_outlined,
-                  text: _address,
+                  text: address,
                   isActive: true,
                 ),
               ),
               const SizedBox(height: 12),
-            ],
-            // Location Link
-            if (_locationLink != null && _locationLink!.isNotEmpty) ...[
+            ] else if (_hasLocationMap) ...[
               GestureDetector(
-                onTap: () => _openSocial('Location', _locationLink!),
+                onTap: _navigateToMap,
                 child: _buildContactRow(
-                  icon: Icons.map_outlined,
-                  text: 'Open in Map',
+                  icon: Icons.location_on_outlined,
+                  text: l10n.viewOnMap,
                   isActive: true,
                 ),
               ),
@@ -784,10 +856,21 @@ class _RestaurantPageState extends State<RestaurantPage> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(
-                        _menuImageUrl!,
+                      CachedNetworkImage(
+                        imageUrl: _menuImages.first,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+                        width: double.infinity,
+                        height: 200,
+                        placeholder: (_, __) => Container(
+                          color: kTextSecondary.withValues(alpha: 0.1),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: kPrimary,
+                            ),
+                          ),
+                        ),
+                        errorWidget: (_, __, ___) => Container(
                           color: kTextSecondary.withValues(alpha: 0.1),
                           child: const Icon(
                             Icons.menu_book,
@@ -867,11 +950,43 @@ class _RestaurantPageState extends State<RestaurantPage> {
   }
 }
 
-/// Full-screen menu preview dialog.
-class _MenuPreviewDialog extends StatelessWidget {
-  final String imageUrl;
+/// Full-screen menu preview dialog supporting multiple images.
+class _MenuPreviewDialog extends StatefulWidget {
+  final List<String> imageUrls;
 
-  const _MenuPreviewDialog({required this.imageUrl});
+  const _MenuPreviewDialog({required this.imageUrls});
+
+  @override
+  State<_MenuPreviewDialog> createState() => _MenuPreviewDialogState();
+}
+
+class _MenuPreviewDialogState extends State<_MenuPreviewDialog> {
+  final PageController _pageController = PageController();
+  int _currentIndex = 0;
+
+  void _nextPage() {
+    if (_currentIndex < widget.imageUrls.length - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _previousPage() {
+    if (_currentIndex > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -879,27 +994,105 @@ class _MenuPreviewDialog extends StatelessWidget {
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(16),
       child: Stack(
+        alignment: Alignment.center,
         children: [
-          // Image
+          // Image PageView
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: InteractiveViewer(
-              child: Image.network(
-                imageUrl,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => Container(
-                  color: kCardBg,
-                  child: const Center(
-                    child: Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: kTextSecondary,
+            child: PageView.builder(
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() => _currentIndex = index);
+              },
+              itemCount: widget.imageUrls.length,
+              itemBuilder: (context, index) {
+                return InteractiveViewer(
+                  child: CachedNetworkImage(
+                    imageUrl: widget.imageUrls[index],
+                    fit: BoxFit.contain,
+                    placeholder: (_, __) => const Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: kPrimary,
+                      ),
+                    ),
+                    errorWidget: (_, __, ___) => Container(
+                      color: kCardBg,
+                      child: const Center(
+                        child: Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: kTextSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          // Navigation controls
+          if (widget.imageUrls.length > 1) ...[
+            if (_currentIndex > 0)
+              Positioned(
+                left: 8,
+                child: GestureDetector(
+                  onTap: _previousPage,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    child: const Icon(
+                      Icons.arrow_back_ios_new,
+                      color: Colors.white,
+                      size: 24,
                     ),
                   ),
                 ),
               ),
+            if (_currentIndex < widget.imageUrls.length - 1)
+              Positioned(
+                right: 8,
+                child: GestureDetector(
+                  onTap: _nextPage,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    child: const Icon(
+                      Icons.arrow_forward_ios,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+            // Page Indicator
+            Positioned(
+              bottom: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  '${_currentIndex + 1} / ${widget.imageUrls.length}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ),
-          ),
+          ],
           // Close button
           Positioned(
             top: 8,

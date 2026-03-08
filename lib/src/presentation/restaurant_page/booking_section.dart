@@ -6,6 +6,7 @@ import '../../utils/validation/booking_validator.dart';
 import '../common/input_field.dart';
 import '../common/primary_button.dart';
 import '../common/rounded_card.dart';
+import 'package:restaurant/l10n/gen/app_localizations.dart';
 import 'book_confirm_page.dart';
 
 class BookingSection extends StatefulWidget {
@@ -208,11 +209,12 @@ class _BookingSectionState extends State<BookingSection> {
       );
     }
 
+    final l10n = AppLocalizations.of(context)!;
     return RoundedCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Book a Table', style: kTitleStyle),
+          Text(l10n.bookTableTitle, style: kTitleStyle),
           const SizedBox(height: 24),
 
           // People Count
@@ -309,7 +311,7 @@ class _BookingSectionState extends State<BookingSection> {
             secondChild: Padding(
               padding: const EdgeInsets.only(top: 16),
               child: PrimaryButton(
-                label: 'Book Table',
+                label: l10n.bookTableBtn,
                 onPressed: _isValid
                     ? () {
                         final bookingData = BookingData(

@@ -42,7 +42,7 @@ class QrCubit extends Cubit<QrState> {
     try {
       final result = await _walletRepository.verifyReceipt(
         qrCodeUrl: qrData,
-        restaurantId: restaurantId != null ? int.tryParse(restaurantId!) : null,
+        restaurantId: restaurantId,
       );
 
       if (result.success && result.data != null) {
@@ -61,6 +61,8 @@ class QrCubit extends Cubit<QrState> {
             isLoadingReceipt: false,
             receipt: receipt,
             calculatedCashback: cashback,
+            redeemed: receipt
+                .alreadyRedeemed, // Set initially to true if already redeemed
           ),
         );
       } else {

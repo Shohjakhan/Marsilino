@@ -3,22 +3,25 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:restaurant/l10n/gen/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_config.dart';
+import '../../domain/auth/auth_cubit.dart';
 import '../../domain/cashback/cashback_cubit.dart';
-import '../../domain/cashback/cashback_state.dart';
-import '../../data/repositories/wallet_repository.dart';
-import '../../data/models/wallet_transaction_model.dart';
+import '../../data/api_client.dart';
 import '../../data/repositories/bookings_repository.dart';
 import '../../data/repositories/restaurants_repository.dart';
+import '../../data/repositories/transactions_repository.dart';
 import '../../data/models/booking_response_model.dart';
 import '../../theme/app_theme.dart';
-import '../../providers/locale_provider.dart';
 import '../common/rounded_card.dart';
 import '../../data/repositories/token_storage.dart';
+import '../onboarding/onboarding_page.dart';
 import 'package:flutter/services.dart';
 
 import '../../data/repositories/user_repository.dart';
 import '../../data/models/user_model.dart';
 import 'profile_edit_dialog.dart';
+import 'widgets/wallet_card.dart';
+import 'widgets/language_selector.dart';
+import 'widgets/transaction_history.dart';
 
 /// Available languages for the app.
 enum AppLanguage { english, russian, uzbek }
@@ -32,7 +35,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final _walletRepository = WalletRepository();
+  final _transactionsRepository = TransactionsRepository();
   final _bookingsRepository = BookingsRepository();
   final _restaurantsRepository = RestaurantsRepository();
   final _userRepository = UserRepository();
@@ -41,7 +44,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String _userName = '';
   String? _fcmToken;
 
-  List<WalletTransaction> _transactions = [];
+  List<Transaction> _transactions = [];
   bool _isLoadingTransactions = true;
 
   List<BookingResponse> _bookings = [];
@@ -81,15 +84,15 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadTransactions() async {
-    final result = await _walletRepository.getTransactions();
+    final result = await _transactionsRepository.getTransactions();
     if (!mounted) return;
 
     setState(() {
       _isLoadingTransactions = false;
-      if (result.success && result.data != null) {
-        _transactions = result.data!.transactions;
+      if (result.success) {
+        _transactions = result.transactions;
         // Sort by date desc (newest first)
-        _transactions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        _transactions.sort((a, b) => b.date.compareTo(a.date));
       }
     });
   }
@@ -139,37 +142,39 @@ class _ProfilePageState extends State<ProfilePage> {
     final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: kCardBg,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(kCardRadius),
         ),
         title: Text(l10n.logOut, style: kTitleStyle),
         content: Text(
-          'Are you sure you want to log out?', // Could translate this too if I add it to ARB
+          l10n.logoutConfirm,
           style: kBodyStyle.copyWith(color: kTextSecondary),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text(
               l10n.cancel,
               style: kBodyStyle.copyWith(color: kTextSecondary),
             ),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(l10n.loggedOut),
-                  backgroundColor: kPrimary,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  margin: const EdgeInsets.all(16),
-                ),
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+
+              // Clear auth state
+              await context.read<AuthCubit>().logout();
+              ApiClient.instance.clearAuthToken();
+              await TokenStorage.instance.clear();
+
+              if (!mounted) return;
+
+              // Navigate to onboarding and clear the navigation stack
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const OnboardingPage()),
+                (route) => false,
               );
             },
             child: Text(
@@ -183,19 +188,6 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
     );
-  }
-
-  String _getLanguageLabel(String code) {
-    switch (code) {
-      case 'en':
-        return 'English';
-      case 'ru':
-        return 'Русский';
-      case 'uz':
-        return "O'zbek";
-      default:
-        return 'English';
-    }
   }
 
   @override
@@ -213,13 +205,21 @@ class _ProfilePageState extends State<ProfilePage> {
               _buildProfileHeader(),
               const SizedBox(height: 24),
               // Cashback wallet
-              _buildWalletCard(),
+              WalletCard(
+                cashbackCubit: _cashbackCubit,
+                userName: _userName,
+                userRepository: _userRepository,
+                userFuture: _userFuture,
+              ),
               const SizedBox(height: 32),
               // Language selector
-              _buildLanguageSelector(),
+              const LanguageSelector(),
               const SizedBox(height: 24),
               // Stats summary
-              _buildStatsSummary(),
+              StatsSummary(
+                transactions: _transactions,
+                isLoading: _isLoadingTransactions,
+              ),
               const SizedBox(height: 24),
               // Bookings list (only when feature is enabled)
               if (AppConfig.enableBookings) ...[
@@ -227,7 +227,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 24),
               ],
               // Transaction history
-              _buildTransactionHistory(),
+              TransactionHistory(
+                transactions: _transactions,
+                isLoading: _isLoadingTransactions,
+              ),
               const SizedBox(height: 32),
               // Logout button
               _buildLogoutButton(),
@@ -243,6 +246,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildFcmTokenDebug() {
+    final l10n = AppLocalizations.of(context)!;
     return RoundedCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -259,11 +263,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 onPressed: () {
                   if (_fcmToken != null) {
                     Clipboard.setData(ClipboardData(text: _fcmToken!));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Token copied to clipboard'),
-                      ),
-                    );
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(l10n.tokenCopied)));
                   }
                 },
               ),
@@ -283,190 +285,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildWalletCard() {
-    return BlocProvider.value(
-      value: _cashbackCubit,
-      child: BlocBuilder<CashbackCubit, CashbackState>(
-        bloc: _cashbackCubit,
-        builder: (context, state) {
-          final l10n = AppLocalizations.of(context)!;
-          return Column(
-            children: [
-              // Wallet card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [kPrimaryBold, kPrimary],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(kCardRadius),
-                  boxShadow: [
-                    BoxShadow(
-                      color: kPrimaryBold.withValues(alpha: 0.35),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.account_balance_wallet,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          l10n.cashbackWallet(
-                            _userName.isNotEmpty ? _userName : 'You',
-                          ),
-                          style: kSubtitleStyle.copyWith(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      l10n.balance,
-                      style: kBodyStyle.copyWith(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'UZS ${_formatBalance(state.balance)}',
-                      style: kTitleStyle.copyWith(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (state.lastAddedAmount > 0) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          l10n.recentCashback(
-                            _formatBalance(state.lastAddedAmount),
-                          ),
-                          style: kBodyStyle.copyWith(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Transfer button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: state.isLoading || state.balance <= 0
-                      ? null
-                      : () async {
-                          await _cashbackCubit.transferToCard();
-                          if (mounted &&
-                              _cashbackCubit.state.balance == 0 &&
-                              _cashbackCubit.state.errorMessage == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(l10n.transferSuccess),
-                                backgroundColor: kSuccess,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                margin: const EdgeInsets.all(16),
-                              ),
-                            );
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kPrimaryBold,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: kTextSecondary.withValues(
-                      alpha: 0.2,
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(kButtonRadius),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: state.isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                      : Text(
-                          l10n.transferToCard,
-                          style: kSubtitleStyle.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                ),
-              ),
-              if (state.errorMessage != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  state.errorMessage!,
-                  style: kBodyStyle.copyWith(color: kError, fontSize: 13),
-                ),
-              ],
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  String _formatBalance(double number) {
-    final intValue = number.round();
-    final text = intValue.toString();
-    final buffer = StringBuffer();
-    final len = text.length;
-    for (int i = 0; i < len; i++) {
-      if (i > 0 && (len - i) % 3 == 0) buffer.write(',');
-      buffer.write(text[i]);
-    }
-    return buffer.toString();
-  }
-
   Widget _buildProfileHeader() {
     final l10n = AppLocalizations.of(context)!;
 
@@ -483,7 +301,7 @@ class _ProfilePageState extends State<ProfilePage> {
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 8),
               Text(
-                'Failed to load profile',
+                l10n.failedLoadProfile,
                 style: kBodyStyle.copyWith(color: Colors.red),
               ),
               TextButton(
@@ -492,7 +310,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     _userFuture = _userRepository.getMe();
                   });
                 },
-                child: const Text('Retry'),
+                child: Text(l10n.retryButton),
               ),
             ],
           );
@@ -500,7 +318,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
         final user = snapshot.data!;
         final displayPhone = user.phoneNumber;
-        final displayName = user.fullName ?? 'User';
+        final displayName = user.fullName ?? l10n.defaultUser;
         final initial = displayName.isNotEmpty
             ? displayName[0].toUpperCase()
             : '?';
@@ -579,269 +397,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildLanguageSelector() {
-    final l10n = AppLocalizations.of(context)!;
-    final provider = Provider.of<LocaleProvider>(context);
-    final currentCode = provider.locale.languageCode;
-
-    // Map languages to codes
-    final languages = ['en', 'ru', 'uz'];
-
-    return RoundedCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.language, color: kPrimary, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                l10n.language,
-                style: kSubtitleStyle.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Segmented control
-          Container(
-            decoration: BoxDecoration(
-              color: kBackground,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.all(4),
-            child: Row(
-              children: languages.map((code) {
-                final isSelected = currentCode == code;
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () => provider.setLocale(Locale(code)),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: isSelected ? kPrimary : Colors.transparent,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: kPrimary.withValues(alpha: 0.3),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Text(
-                        _getLanguageLabel(code),
-                        style: TextStyle(
-                          fontFamily: '.SF Pro Text',
-                          fontSize: 13,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                          color: isSelected ? Colors.white : kTextSecondary,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsSummary() {
-    final l10n = AppLocalizations.of(context)!;
-    if (_isLoadingTransactions) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    // Sum only cashback-type transactions
-    final totalSaved = _transactions
-        .where((t) => t.isCashback)
-        .fold<double>(0, (sum, t) => sum + t.amount);
-
-    return Row(
-      children: [
-        Expanded(
-          child: _StatCard(
-            icon: Icons.receipt_long_outlined,
-            value: '${_transactions.length}',
-            label: l10n.redemptions,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _StatCard(
-            icon: Icons.savings_outlined,
-            value: '${(totalSaved / 1000).toStringAsFixed(0)}K',
-            label: l10n.uzsSaved,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTransactionHistory() {
-    final l10n = AppLocalizations.of(context)!;
-    if (_isLoadingTransactions) {
-      return const SizedBox(
-        height: 100,
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              l10n.redemptionHistory,
-              style: kSubtitleStyle.copyWith(fontWeight: FontWeight.bold),
-            ),
-            if (_transactions.isNotEmpty)
-              Text(l10n.seeAll, style: kBodyStyle.copyWith(color: kPrimary)),
-          ],
-        ),
-        const SizedBox(height: 16),
-        if (_transactions.isEmpty)
-          _buildEmptyHistory()
-        else
-          ..._transactions.map((t) => _buildTransactionItem(t)),
-      ],
-    );
-  }
-
-  Widget _buildEmptyHistory() {
-    final l10n = AppLocalizations.of(context)!;
-    return RoundedCard(
-      child: Column(
-        children: [
-          Icon(
-            Icons.receipt_long_outlined,
-            size: 48,
-            color: kTextSecondary.withValues(alpha: 0.3),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            l10n.noRedemptions,
-            style: kSubtitleStyle.copyWith(color: kTextSecondary),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            l10n.noRedemptionsSub,
-            style: kBodyStyle.copyWith(
-              color: kTextSecondary.withValues(alpha: 0.7),
-              fontSize: 13,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ... _buildTransactionItem is mostly data, not UI strings except currency?
-  // UZS is usually standard.
-  // Date formatting might need locale, but for now I leave it as is or could use DateFormat from intl later.
-  // I will just use existing logic for item, as labels "Saved", "Cashback" are implicit in UI.
-
-  Widget _buildTransactionItem(WalletTransaction transaction) {
-    final isCashback = transaction.isCashback;
-    final color = isCashback ? Colors.green : kPrimary;
-    final icon = isCashback
-        ? Icons.add_circle_outline
-        : Icons.arrow_circle_up_outlined;
-    final amountPrefix = isCashback ? '+' : '-';
-    final typeLabel = isCashback ? 'Cashback' : 'Transfer';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: kCardBg,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [kCardShadow],
-      ),
-      child: Row(
-        children: [
-          // Icon
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 22),
-          ),
-          const SizedBox(width: 14),
-          // Description and date
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  transaction.restaurantName ??
-                      transaction.description ??
-                      typeLabel,
-                  style: kBodyStyle.copyWith(fontWeight: FontWeight.w600),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _formatDate(transaction.createdAt),
-                  style: kBodyStyle.copyWith(
-                    fontSize: 12,
-                    color: kTextSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Amount
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '$amountPrefix${_formatNumber(transaction.amount.round())} UZS',
-                style: kBodyStyle.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  typeLabel,
-                  style: kBodyStyle.copyWith(
-                    color: color,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildLogoutButton() {
     final l10n = AppLocalizations.of(context)!;
     return OutlinedButton.icon(
@@ -859,43 +414,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // ... rest of methods
-  String _formatDate(DateTime date) {
-    // Ideally this should use DateFormat with locale.
-    // user requirement was "Add all UI strings".
-    // I already added most.
-    final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
-  }
-
-  String _formatNumber(int number) {
-    final text = number.toString();
-    final buffer = StringBuffer();
-    final len = text.length;
-
-    for (int i = 0; i < len; i++) {
-      if (i > 0 && (len - i) % 3 == 0) {
-        buffer.write(',');
-      }
-      buffer.write(text[i]);
-    }
-
-    return buffer.toString();
-  }
-
   Widget _buildBookingsList() {
     // Safety guard — should not be called when flag is off, but be defensive.
     if (!AppConfig.enableBookings) return const SizedBox.shrink();
@@ -911,6 +429,8 @@ class _ProfilePageState extends State<ProfilePage> {
       return const SizedBox.shrink();
     }
 
+    final l10n = AppLocalizations.of(context)!;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -918,7 +438,7 @@ class _ProfilePageState extends State<ProfilePage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Upcoming Reservations',
+              l10n.upcomingReservations,
               style: kSubtitleStyle.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
@@ -930,6 +450,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildBookingItem(BookingResponse booking) {
+    final l10n = AppLocalizations.of(context)!;
     // Get restaurant name from cache or fallback to ID
     final restaurantName = _restaurantNames[booking.restaurant] ?? 'Restaurant';
 
@@ -971,7 +492,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Ref: #${booking.btid}',
+                      l10n.bookingRef(booking.btid),
                       style: kBodyStyle.copyWith(
                         fontSize: 12,
                         color: kTextSecondary,
@@ -1024,42 +545,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 style: kBodyStyle.copyWith(fontSize: 13, color: kTextSecondary),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Stats card widget.
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String value;
-  final String label;
-
-  const _StatCard({
-    required this.icon,
-    required this.value,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: kCardBg,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [kCardShadow],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: kPrimary, size: 24),
-          const SizedBox(height: 8),
-          Text(value, style: kTitleStyle.copyWith(fontSize: 22)),
-          Text(
-            label,
-            style: kBodyStyle.copyWith(color: kTextSecondary, fontSize: 12),
           ),
         ],
       ),

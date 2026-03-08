@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:restaurant/l10n/gen/app_localizations.dart';
@@ -576,7 +577,16 @@ class _MapPageState extends State<MapPage> {
                 ),
                 child: ClipOval(
                   child: restaurant.logo != null
-                      ? Image.network(restaurant.logo!, fit: BoxFit.cover)
+                      ? CachedNetworkImage(
+                          imageUrl: restaurant.logo!,
+                          fit: BoxFit.cover,
+                          width: 56,
+                          height: 56,
+                          errorWidget: (_, __, ___) => const Icon(
+                            Icons.restaurant,
+                            color: kTextSecondary,
+                          ),
+                        )
                       : const Icon(Icons.restaurant, color: kTextSecondary),
                 ),
               ),

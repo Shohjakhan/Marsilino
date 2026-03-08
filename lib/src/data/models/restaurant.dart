@@ -12,6 +12,9 @@ class Restaurant {
   final Map<String, dynamic>? socialMedia;
   final List<dynamic>? menu;
   final String? locationText;
+  final String? locationDescriptionEn;
+  final String? locationDescriptionRu;
+  final String? locationDescriptionUz;
   final double? cashbackPercentage;
   final String? tin;
   final List<RestaurantTag> tags;
@@ -22,6 +25,7 @@ class Restaurant {
   final int? maxPeople;
   final List<String>? availableTimes;
   final String? menuUrl;
+  final List<String> menuImages;
   final String? locationLink;
   final bool isLiked;
   final double? averageRating;
@@ -38,8 +42,12 @@ class Restaurant {
     this.socialMedia,
     this.menu,
     this.menuUrl,
+    this.menuImages = const [],
     this.locationLink,
     this.locationText,
+    this.locationDescriptionEn,
+    this.locationDescriptionRu,
+    this.locationDescriptionUz,
     this.cashbackPercentage,
     this.tin,
     this.tags = const [],
@@ -73,11 +81,23 @@ class Restaurant {
     // Handle menu (can be List or String URL)
     List<dynamic>? menuList;
     String? menuUrl;
+    List<String> menuImages = [];
     final rawMenu = json['menu'];
     if (rawMenu is List) {
       menuList = rawMenu;
     } else if (rawMenu != null) {
       menuUrl = rawMenu.toString();
+    }
+
+    final rawMenuImages = json['menu_images'];
+    if (rawMenuImages != null && rawMenuImages is List) {
+      menuImages = rawMenuImages
+          .map((img) {
+            if (img is Map) return img['image']?.toString() ?? '';
+            return img.toString();
+          })
+          .where((url) => url.isNotEmpty)
+          .toList();
     }
 
     // Parse location_link
@@ -102,15 +122,25 @@ class Restaurant {
       logo: json['logo'] as String?,
       description: json['description'] as String?,
       hashtags: json['hashtags'] as String?,
-      workingHours: json['working_hours'] as String?,
-      contactInformation: json['contact_information'] as String?,
+      workingHours: _parseStringFallback(
+        json['working_hours'],
+        json['working_days_and_hours'],
+      ),
+      contactInformation: _parseStringFallback(
+        json['contact_information'],
+        json['contact'],
+      ),
       socialMedia: json['social_media'] is Map
           ? json['social_media'] as Map<String, dynamic>
           : null,
       menu: menuList,
       menuUrl: menuUrl,
+      menuImages: menuImages,
       locationLink: locationLink,
-      locationText: json['location_text'] as String?,
+      locationText: (json['location_text'] as String?) ?? locationLink,
+      locationDescriptionEn: json['location_description_en'] as String?,
+      locationDescriptionRu: json['location_description_ru'] as String?,
+      locationDescriptionUz: json['location_description_uz'] as String?,
       cashbackPercentage:
           _parseDouble(json['cashback_percentage']) ??
           _parseDouble(json['discount_percentage']),
@@ -119,10 +149,14 @@ class Restaurant {
       galleryImages: gallery,
       latitude:
           _parseDouble(json['latitude']) ??
-          _extractLatFromYandex(json['yandex_map_url'] as String?),
+          _extractLatFromYandex(json['yandex_map_url'] as String?) ??
+          _extractLatFromYandex(json['location_link'] as String?) ??
+          _extractLatFromYandex(json['location_text'] as String?),
       longitude:
           _parseDouble(json['longitude']) ??
-          _extractLngFromYandex(json['yandex_map_url'] as String?),
+          _extractLngFromYandex(json['yandex_map_url'] as String?) ??
+          _extractLngFromYandex(json['location_link'] as String?) ??
+          _extractLngFromYandex(json['location_text'] as String?),
       bookingAvailable: json['booking_available'] as bool?,
       maxPeople: json['max_people'] as int?,
       availableTimes: (json['available_times'] as List?)
@@ -132,6 +166,14 @@ class Restaurant {
       averageRating: _parseDouble(json['average_rating']),
       totalRatings: json['total_ratings'] as int?,
     );
+  }
+
+  static String? _parseStringFallback(dynamic val1, dynamic val2) {
+    final str1 = val1?.toString().trim();
+    if (str1 != null && str1.isNotEmpty) return str1;
+    final str2 = val2?.toString().trim();
+    if (str2 != null && str2.isNotEmpty) return str2;
+    return null;
   }
 
   static double? _parseDouble(dynamic value) {
@@ -206,6 +248,39 @@ class Restaurant {
   String? get cashbackText {
     if (cashbackPercentage == null || cashbackPercentage! <= 0) return null;
     return '${cashbackPercentage!.toInt()}% cashback';
+  }
+
+  /// Returns a human-readable address.
+  /// If [locationText] is a URL (e.g. a Yandex map link), returns empty string
+  /// so callers know to fall back to the map-only display.
+  String displayAddress(String languageCode) {
+    String? text;
+    switch (languageCode) {
+      case 'ru':
+        text = locationDescriptionRu;
+        break;
+      case 'uz':
+        text = locationDescriptionUz;
+        break;
+      case 'en':
+      default:
+        text = locationDescriptionEn;
+        break;
+    }
+
+    // Fallback to locationText if specifically requested locale description is missing
+    text ??= locationText;
+
+    if (text == null || text.isEmpty) return '';
+    // Detect common URL patterns
+    if (text.startsWith('http') ||
+        text.startsWith('yandex') ||
+        text.contains('maps.yandex') ||
+        text.contains('yandex.uz') ||
+        text.contains('yandex.ru')) {
+      return '';
+    }
+    return text;
   }
 
   /// Get Instagram handle from social media.

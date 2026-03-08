@@ -183,10 +183,15 @@ class RestaurantsRepository {
           return [];
         }
 
-        _cachedTagObjects = tagList
-            .whereType<Map<String, dynamic>>()
-            .map((t) => RestaurantTag.fromJson(t))
-            .toList();
+        _cachedTagObjects = [];
+        for (final item in tagList) {
+          if (item is Map) {
+            final map = item.map(
+              (key, value) => MapEntry(key.toString(), value),
+            );
+            _cachedTagObjects.add(RestaurantTag.fromJson(map));
+          }
+        }
 
         return _cachedTagObjects.map((t) => t.name).toList();
       }
@@ -313,31 +318,51 @@ class RestaurantsRepository {
     }
 
     try {
-      final response = await _client.get('v1/restaurants/$id');
+      final response = await _client.get(
+        'v1/restaurants/',
+        queryParameters: {'id': id},
+      );
 
       if (response.statusCode == 200) {
         final body = response.data;
-        Map<String, dynamic> restaurantJson;
+        Map<String, dynamic>? restaurantJson;
 
-        // Unwrap {success, data} format
+        // Unwrap {success, data: [...]} format since the API returns an array
         if (body is Map<String, dynamic> &&
             body['success'] == true &&
+            body['data'] is List &&
+            (body['data'] as List).isNotEmpty) {
+          final firstItem = (body['data'] as List).first;
+          if (firstItem is Map<String, dynamic>) {
+            restaurantJson = firstItem;
+          }
+        } else if (body is Map<String, dynamic> &&
+            body['success'] == true &&
             body['data'] is Map<String, dynamic>) {
+          // Fallback if backend returns an object
           restaurantJson = body['data'] as Map<String, dynamic>;
-        } else if (body is Map<String, dynamic>) {
+        } else if (body is List && body.isNotEmpty) {
+          final firstItem = body.first;
+          if (firstItem is Map<String, dynamic>) {
+            restaurantJson = firstItem;
+          }
+        } else if (body is Map<String, dynamic> &&
+            !body.containsKey('success')) {
           restaurantJson = body;
-        } else {
-          return RestaurantDetailResult(
-            success: false,
-            error: 'Invalid response format',
-          );
         }
 
-        final restaurant = Restaurant.fromJson(restaurantJson);
-        return RestaurantDetailResult(success: true, restaurant: restaurant);
+        if (restaurantJson != null) {
+          final restaurant = Restaurant.fromJson(restaurantJson);
+          return RestaurantDetailResult(success: true, restaurant: restaurant);
+        } else {
+          return const RestaurantDetailResult(
+            success: false,
+            error: 'Restaurant not found or invalid format',
+          );
+        }
       }
 
-      return RestaurantDetailResult(
+      return const RestaurantDetailResult(
         success: false,
         error: 'Failed to load restaurant details',
       );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/repositories/user_repository.dart';
 import '../../theme/app_theme.dart';
+import 'package:restaurant/l10n/gen/app_localizations.dart';
 
 /// Shows a dialog for editing the user's profile name.
 /// Returns `true` if the profile was updated successfully, `false` otherwise.
@@ -77,7 +78,10 @@ class _ProfileEditDialogState extends State<_ProfileEditDialog> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(kCardRadius),
       ),
-      title: Text('Edit Profile', style: kTitleStyle),
+      title: Text(
+        AppLocalizations.of(context)!.editProfile,
+        style: kTitleStyle,
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

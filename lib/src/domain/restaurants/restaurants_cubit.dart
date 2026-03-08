@@ -176,7 +176,7 @@ class RestaurantsCubit extends Cubit<RestaurantsState> {
     try {
       _cachedTags = await _repository.getFilterTags();
       _applyFiltersAndEmit();
-    } catch (_) {
+    } catch (e) {
       // Ignore error for tags, just proceed
     }
   }

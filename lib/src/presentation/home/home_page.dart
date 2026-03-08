@@ -109,16 +109,17 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  RestaurantCardData _toCardData(Restaurant r) {
+  RestaurantCardData _toCardData(BuildContext context, Restaurant r) {
     return RestaurantCardData(
       name: r.name,
-      address: r.locationText ?? '',
+      address: r.displayAddress(Localizations.localeOf(context).languageCode),
       workingHours: r.workingHours ?? '',
       logoUrl: r.logo,
       tags: r.tagsList,
       cashback: r.cashbackText,
       latitude: r.latitude,
       longitude: r.longitude,
+      averageRating: r.averageRating,
     );
   }
 
@@ -399,7 +400,7 @@ class _HomePageState extends State<HomePage> {
           return Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: RestaurantCard(
-              data: _toCardData(restaurant),
+              data: _toCardData(context, restaurant),
               onTap: () => _navigateToRestaurant(context, restaurant),
             ),
           );

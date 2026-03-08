@@ -97,6 +97,9 @@
   },
   "balance": "Balance",
   "transferToCard": "Transfer to Card",
+  "enterCardNumber": "Please enter your 16-digit card number.",
+  "cardNumberLengthError": "Card number must be 16 digits.",
+  "transferFailed": "Transfer failed",
   "recentCashback": "+UZS {amount} recent",
   "@recentCashback": {
     "placeholders": {
@@ -173,5 +176,30 @@
         "type": "int"
       }
     }
-  }
+  },
+  "viewOnMap": "View on Map",
+  "people": "People",
+  "signUpTitle": "Sign Up",
+  "failedUpdateFavorite": "Failed to update favorite",
+  "callingSimulation": "Calling {phone} (simulation)",
+  "@callingSimulation": { "placeholders": { "phone": { "type": "String" } } },
+  "openingSocialSimulation": "Opening {platform}: {handle} (simulation)",
+  "@openingSocialSimulation": { "placeholders": { "platform": { "type": "String" }, "handle": { "type": "String" } } },
+  "openingMapLink": "Opening map link: {link}",
+  "@openingMapLink": { "placeholders": { "link": { "type": "String" } } },
+  "errorMissingRestaurantId": "Error: Missing restaurant ID",
+  "failedLoadRestaurant": "Failed to load restaurant",
+  "shareSimulation": "Share (simulation)",
+  "reportLoggedConsole": "Report logged to console",
+  "retryButton": "Retry",
+  "failedCreateBooking": "Failed to create booking",
+  "bookTableTitle": "Book a Table",
+  "bookTableBtn": "Book Table",
+  "failedRemoveFavorite": "Failed to remove from favorites",
+  "tokenCopied": "Token copied to clipboard",
+  "failedLoadProfile": "Failed to load profile",
+  "defaultUser": "User",
+  "upcomingReservations": "Upcoming Reservations",
+  "bookingRef": "Ref: #{id}",
+  "@bookingRef": { "placeholders": { "id": { "type": "String" } } }
 }

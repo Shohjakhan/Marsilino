@@ -184,7 +184,7 @@ class WalletRepository {
   /// Verify a Soliq receipt via QR code.
   Future<WalletResult<ReceiptModel>> verifyReceipt({
     required String qrCodeUrl,
-    int? restaurantId,
+    String? restaurantId,
   }) async {
     try {
       final data = <String, dynamic>{'qr_code_url': qrCodeUrl};

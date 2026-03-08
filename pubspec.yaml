@@ -52,6 +52,7 @@ dependencies:
   firebase_messaging: ^16.1.1
   mobile_scanner: ^7.2.0
   equatable: ^2.0.8
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:

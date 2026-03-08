@@ -284,6 +284,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get transferToCard => 'Transfer to Card';
 
   @override
+  String get enterCardNumber => 'Please enter your 16-digit card number.';
+
+  @override
+  String get cardNumberLengthError => 'Card number must be 16 digits.';
+
+  @override
+  String get transferFailed => 'Transfer failed';
+
+  @override
   String recentCashback(String amount) {
     return '+UZS $amount recent';
   }
@@ -390,5 +399,76 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String restaurantsCount(int count) {
     return '$count restaurants';
+  }
+
+  @override
+  String get viewOnMap => 'View on Map';
+
+  @override
+  String get people => 'People';
+
+  @override
+  String get signUpTitle => 'Sign Up';
+
+  @override
+  String get failedUpdateFavorite => 'Failed to update favorite';
+
+  @override
+  String callingSimulation(String phone) {
+    return 'Calling $phone (simulation)';
+  }
+
+  @override
+  String openingSocialSimulation(String platform, String handle) {
+    return 'Opening $platform: $handle (simulation)';
+  }
+
+  @override
+  String openingMapLink(String link) {
+    return 'Opening map link: $link';
+  }
+
+  @override
+  String get errorMissingRestaurantId => 'Error: Missing restaurant ID';
+
+  @override
+  String get failedLoadRestaurant => 'Failed to load restaurant';
+
+  @override
+  String get shareSimulation => 'Share (simulation)';
+
+  @override
+  String get reportLoggedConsole => 'Report logged to console';
+
+  @override
+  String get retryButton => 'Retry';
+
+  @override
+  String get failedCreateBooking => 'Failed to create booking';
+
+  @override
+  String get bookTableTitle => 'Book a Table';
+
+  @override
+  String get bookTableBtn => 'Book Table';
+
+  @override
+  String get failedRemoveFavorite => 'Failed to remove from favorites';
+
+  @override
+  String get tokenCopied => 'Token copied to clipboard';
+
+  @override
+  String get failedLoadProfile => 'Failed to load profile';
+
+  @override
+  String get defaultUser => 'User';
+
+  @override
+  String get upcomingReservations => 'Upcoming Reservations';
+
+  @override
+  String bookingRef(String id) {
+    return 'Ref: #$id';
   }
 }

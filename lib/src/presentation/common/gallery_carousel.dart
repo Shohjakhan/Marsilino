@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../theme/app_theme.dart';
 
 /// Image source type for the carousel.
@@ -117,16 +118,13 @@ class _GalleryCarouselState extends State<GalleryCarousel>
 
   Widget _buildImage(CarouselImage image) {
     return switch (image) {
-      CarouselNetworkImage(url: final url) => Image.network(
-        url,
+      CarouselNetworkImage(url: final url) => CachedNetworkImage(
+        imageUrl: url,
         fit: widget.fit,
         width: double.infinity,
         height: widget.height,
-        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return _buildLoadingIndicator();
-        },
+        placeholder: (_, __) => _buildLoadingIndicator(),
+        errorWidget: (_, __, ___) => _buildPlaceholder(),
       ),
       CarouselAssetImage(assetPath: final path) => Image.asset(
         path,

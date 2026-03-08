@@ -5,7 +5,7 @@
 /// {"id": 1, "name": "Fast Food", "icon_url": "http://example.com/icon.png"}
 /// ```
 class RestaurantTag {
-  final int id;
+  final String id;
   final String name;
   final String? iconUrl;
 
@@ -13,7 +13,7 @@ class RestaurantTag {
 
   factory RestaurantTag.fromJson(Map<String, dynamic> json) {
     return RestaurantTag(
-      id: json['id'] as int,
+      id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '',
       iconUrl: json['icon_url'] as String?,
     );

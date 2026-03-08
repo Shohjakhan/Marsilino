@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../data/models/restaurant.dart';
 import '../../theme/app_theme.dart';
 import '../restaurant_page/restaurant_page.dart';
@@ -24,6 +25,7 @@ class RestaurantCardData {
   final String? cashback;
   final double? latitude;
   final double? longitude;
+  final double? averageRating;
 
   const RestaurantCardData({
     required this.name,
@@ -34,6 +36,7 @@ class RestaurantCardData {
     this.cashback,
     this.latitude,
     this.longitude,
+    this.averageRating,
   });
 
   /// Convert to a Restaurant model for the landing page.
@@ -54,6 +57,7 @@ class RestaurantCardData {
       menuUrl: 'https://picsum.photos/seed/${name.hashCode}menu/600/800',
       latitude: latitude,
       longitude: longitude,
+      averageRating: averageRating,
     );
   }
 }
@@ -67,14 +71,14 @@ class RestaurantCard extends StatelessWidget {
   /// Callback when card is tapped.
   final VoidCallback? onTap;
 
-  /// Card height (default 140).
-  final double height;
+  /// Optional card height. If null, sizes to contents.
+  final double? height;
 
   const RestaurantCard({
     super.key,
     required this.data,
     this.onTap,
-    this.height = 140,
+    this.height,
   });
 
   @override
@@ -94,12 +98,18 @@ class RestaurantCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // Left: Circular logo
                   _buildLogo(),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 14),
                   // Middle: Restaurant info
                   Expanded(child: _buildInfo()),
+                  if (data.averageRating != null) ...[
+                    const SizedBox(width: 12),
+                    // Right: Rating
+                    _buildRating(),
+                  ],
                 ],
               ),
             ),
@@ -113,8 +123,8 @@ class RestaurantCard extends StatelessWidget {
 
   Widget _buildLogo() {
     return Container(
-      width: 64,
-      height: 64,
+      width: 56,
+      height: 56,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: kBackground,
@@ -126,36 +136,64 @@ class RestaurantCard extends StatelessWidget {
       child: ClipOval(
         child: data.logoUrl != null
             ? _buildLogoImage()
-            : const Icon(Icons.restaurant, size: 28, color: kTextSecondary),
+            : const Icon(Icons.restaurant, size: 24, color: kTextSecondary),
       ),
     );
   }
 
   Widget _buildLogoImage() {
     if (data.logoUrl!.startsWith('http')) {
-      return Image.network(
-        data.logoUrl!,
+      return CachedNetworkImage(
+        imageUrl: data.logoUrl!,
         fit: BoxFit.cover,
-        width: 64,
-        height: 64,
-        errorBuilder: (_, __, ___) =>
-            const Icon(Icons.restaurant, size: 28, color: kTextSecondary),
+        width: 56,
+        height: 56,
+        placeholder: (_, __) => const Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2, color: kPrimary),
+          ),
+        ),
+        errorWidget: (_, __, ___) =>
+            const Icon(Icons.restaurant, size: 24, color: kTextSecondary),
       );
     }
     return Image.asset(
       data.logoUrl!,
       fit: BoxFit.cover,
-      width: 64,
-      height: 64,
+      width: 56,
+      height: 56,
       errorBuilder: (_, __, ___) =>
-          const Icon(Icons.restaurant, size: 28, color: kTextSecondary),
+          const Icon(Icons.restaurant, size: 24, color: kTextSecondary),
+    );
+  }
+
+  Widget _buildRating() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(
+          Icons.star_rounded,
+          size: 25,
+          color: Color(0xFFFFB800), // Gold star
+        ),
+        const SizedBox(height: 2),
+        Text(
+          data.averageRating!.toStringAsFixed(1),
+          style: kSubtitleStyle.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildInfo() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         // Restaurant name
         Text(
@@ -164,33 +202,38 @@ class RestaurantCard extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 4),
-        // Address
-        Text(
-          data.address,
-          style: kBodyStyle.copyWith(color: kTextSecondary),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 2),
-        // Working hours
-        Row(
-          children: [
-            Icon(
-              Icons.access_time,
-              size: 12,
-              color: kTextSecondary.withValues(alpha: 0.7),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              data.workingHours,
-              style: kBodyStyle.copyWith(
-                fontSize: 12,
+        if (data.address.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          // Address
+          Text(
+            data.address,
+            style: kBodyStyle.copyWith(color: kTextSecondary),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+        if (data.workingHours.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          // Working hours
+          Row(
+            children: [
+              Icon(
+                Icons.access_time,
+                size: 14,
                 color: kTextSecondary.withValues(alpha: 0.7),
               ),
-            ),
-          ],
-        ),
+              const SizedBox(width: 4),
+              Text(
+                data.workingHours,
+                style: kBodyStyle.copyWith(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: kTextSecondary,
+                ),
+              ),
+            ],
+          ),
+        ],
         if (data.tags.isNotEmpty) ...[
           const SizedBox(height: 8),
           // Tags
@@ -227,8 +270,8 @@ class RestaurantCard extends StatelessWidget {
 
   Widget _buildCashbackPill() {
     return Positioned(
-      top: -10,
-      right: 12,
+      top: -12,
+      right: 14,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(

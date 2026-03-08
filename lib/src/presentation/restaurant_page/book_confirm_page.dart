@@ -7,6 +7,7 @@ import '../../theme/app_theme.dart';
 import '../../utils/validation/booking_validator.dart';
 import '../common/primary_button.dart';
 import '../common/rounded_card.dart';
+import 'package:restaurant/l10n/gen/app_localizations.dart';
 import 'book_success_page.dart';
 
 /// Booking confirmation page that displays booking details and a confirm button.
@@ -32,6 +33,7 @@ class _BookConfirmPageState extends State<BookConfirmPage> {
   String? _errorMessage;
 
   Future<void> _confirmBooking() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -68,7 +70,7 @@ class _BookConfirmPageState extends State<BookConfirmPage> {
         // Show error
         setState(() {
           _isLoading = false;
-          _errorMessage = result.error ?? 'Failed to create booking';
+          _errorMessage = result.error ?? l10n.failedCreateBooking;
         });
       }
     } catch (e) {

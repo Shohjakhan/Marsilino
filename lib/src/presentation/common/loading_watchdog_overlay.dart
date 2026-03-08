@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../logic/loading_watchdog.dart';
 import '../../theme/app_theme.dart';
+import 'package:restaurant/l10n/gen/app_localizations.dart';
 
 /// Overlay widget that appears when loading takes too long.
 class LoadingWatchdogOverlay extends StatefulWidget {
@@ -161,7 +162,7 @@ class _LoadingWatchdogOverlayState extends State<LoadingWatchdogOverlay> {
                       ElevatedButton.icon(
                         onPressed: _handleRetry,
                         icon: const Icon(Icons.refresh, size: 18),
-                        label: const Text('Retry'),
+                        label: Text(AppLocalizations.of(context)!.retryButton),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: kPrimary,
                           foregroundColor: Colors.white,
@@ -190,7 +191,7 @@ class _LoadingWatchdogOverlayState extends State<LoadingWatchdogOverlay> {
                             color: kPrimary.withValues(alpha: 0.5),
                           ),
                         ),
-                        child: const Text('Continue'),
+                        child: Text(AppLocalizations.of(context)!.continueText),
                       ),
                     ],
                   ),

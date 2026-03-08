@@ -285,6 +285,15 @@ class AppLocalizationsUz extends AppLocalizations {
   String get transferToCard => 'Kartaga o\'tkazish';
 
   @override
+  String get enterCardNumber => 'Iltimos, 16 xonali karta raqamini kiriting.';
+
+  @override
+  String get cardNumberLengthError => 'Karta raqami 16 xonali bo\'lishi kerak.';
+
+  @override
+  String get transferFailed => 'O\'tkazma amalga oshmadi';
+
+  @override
   String recentCashback(String amount) {
     return '+$amount UZS yaqinda';
   }
@@ -391,5 +400,76 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String restaurantsCount(int count) {
     return '$count ta restoran';
+  }
+
+  @override
+  String get viewOnMap => 'Xaritada ko\'rish';
+
+  @override
+  String get people => 'Kishi';
+
+  @override
+  String get signUpTitle => 'Ro\'yxatdan o\'tish';
+
+  @override
+  String get failedUpdateFavorite => 'Saqlanganlarni yangilab bo\'lmadi';
+
+  @override
+  String callingSimulation(String phone) {
+    return 'Qo\'ng\'iroq qilinmoqda $phone (simulyatsiya)';
+  }
+
+  @override
+  String openingSocialSimulation(String platform, String handle) {
+    return '$platform ochilmoqda: $handle (simulyatsiya)';
+  }
+
+  @override
+  String openingMapLink(String link) {
+    return 'Xarita ochilmoqda: $link';
+  }
+
+  @override
+  String get errorMissingRestaurantId => 'Xato: Restoran ID yo\'q';
+
+  @override
+  String get failedLoadRestaurant => 'Restoranni yuklab bo\'lmadi';
+
+  @override
+  String get shareSimulation => 'Ulashish (simulyatsiya)';
+
+  @override
+  String get reportLoggedConsole => 'Hisobot saqlandi';
+
+  @override
+  String get retryButton => 'Qayta urinish';
+
+  @override
+  String get failedCreateBooking => 'Bron qilib bo\'lmadi';
+
+  @override
+  String get bookTableTitle => 'Stol band qilish';
+
+  @override
+  String get bookTableBtn => 'Band qilish';
+
+  @override
+  String get failedRemoveFavorite => 'Saqlanganlardan o\'chirib bo\'lmadi';
+
+  @override
+  String get tokenCopied => 'Token nusxalandi';
+
+  @override
+  String get failedLoadProfile => 'Profilni yuklab bo\'lmadi';
+
+  @override
+  String get defaultUser => 'Foydalanuvchi';
+
+  @override
+  String get upcomingReservations => 'Kelgusi band qilishlar';
+
+  @override
+  String bookingRef(String id) {
+    return 'Bron: #$id';
   }
 }

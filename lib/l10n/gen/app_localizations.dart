@@ -640,6 +640,24 @@ abstract class AppLocalizations {
   /// **'Transfer to Card'**
   String get transferToCard;
 
+  /// No description provided for @enterCardNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your 16-digit card number.'**
+  String get enterCardNumber;
+
+  /// No description provided for @cardNumberLengthError.
+  ///
+  /// In en, this message translates to:
+  /// **'Card number must be 16 digits.'**
+  String get cardNumberLengthError;
+
+  /// No description provided for @transferFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer failed'**
+  String get transferFailed;
+
   /// No description provided for @recentCashback.
   ///
   /// In en, this message translates to:
@@ -831,6 +849,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} restaurants'**
   String restaurantsCount(int count);
+
+  /// No description provided for @viewOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'View on Map'**
+  String get viewOnMap;
+
+  /// No description provided for @people.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get people;
+
+  /// No description provided for @signUpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign Up'**
+  String get signUpTitle;
+
+  /// No description provided for @failedUpdateFavorite.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update favorite'**
+  String get failedUpdateFavorite;
+
+  /// No description provided for @callingSimulation.
+  ///
+  /// In en, this message translates to:
+  /// **'Calling {phone} (simulation)'**
+  String callingSimulation(String phone);
+
+  /// No description provided for @openingSocialSimulation.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening {platform}: {handle} (simulation)'**
+  String openingSocialSimulation(String platform, String handle);
+
+  /// No description provided for @openingMapLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening map link: {link}'**
+  String openingMapLink(String link);
+
+  /// No description provided for @errorMissingRestaurantId.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: Missing restaurant ID'**
+  String get errorMissingRestaurantId;
+
+  /// No description provided for @failedLoadRestaurant.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load restaurant'**
+  String get failedLoadRestaurant;
+
+  /// No description provided for @shareSimulation.
+  ///
+  /// In en, this message translates to:
+  /// **'Share (simulation)'**
+  String get shareSimulation;
+
+  /// No description provided for @reportLoggedConsole.
+  ///
+  /// In en, this message translates to:
+  /// **'Report logged to console'**
+  String get reportLoggedConsole;
+
+  /// No description provided for @retryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retryButton;
+
+  /// No description provided for @failedCreateBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create booking'**
+  String get failedCreateBooking;
+
+  /// No description provided for @bookTableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Book a Table'**
+  String get bookTableTitle;
+
+  /// No description provided for @bookTableBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Book Table'**
+  String get bookTableBtn;
+
+  /// No description provided for @failedRemoveFavorite.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to remove from favorites'**
+  String get failedRemoveFavorite;
+
+  /// No description provided for @tokenCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Token copied to clipboard'**
+  String get tokenCopied;
+
+  /// No description provided for @failedLoadProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load profile'**
+  String get failedLoadProfile;
+
+  /// No description provided for @defaultUser.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get defaultUser;
+
+  /// No description provided for @upcomingReservations.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming Reservations'**
+  String get upcomingReservations;
+
+  /// No description provided for @bookingRef.
+  ///
+  /// In en, this message translates to:
+  /// **'Ref: #{id}'**
+  String bookingRef(String id);
 }
 
 class _AppLocalizationsDelegate
